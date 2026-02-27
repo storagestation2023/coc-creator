@@ -46,13 +46,18 @@ const STEP_COMPONENTS = [
 
 export function WizardShell() {
   const currentStep = useCharacterStore((s) => s.currentStep)
+  const timesUsed = useCharacterStore((s) => s.timesUsed)
+  const inviteCodeId = useCharacterStore((s) => s.inviteCodeId)
   const StepComponent = STEP_COMPONENTS[currentStep]
+
+  // Key forces remount when character is abandoned or new invite code is entered
+  const characterKey = `${timesUsed}-${inviteCodeId}`
 
   return (
     <div className="space-y-6">
       <Stepper steps={STEP_LABELS} currentStep={currentStep} />
       <div className="min-h-[400px]">
-        {StepComponent && <StepComponent />}
+        {StepComponent && <StepComponent key={characterKey} />}
       </div>
     </div>
   )
