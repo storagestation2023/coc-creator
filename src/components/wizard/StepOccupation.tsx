@@ -33,7 +33,11 @@ export function StepOccupation() {
         const nameMatch = occ.name.toLowerCase().includes(term)
         const descMatch = occ.description?.toLowerCase().includes(term)
         const skillMatch = occ.skills.some((sid) => {
-          if (sid.startsWith('any')) return false
+          if (sid === 'any' || sid === 'any_academic') return false
+          if (sid.startsWith('choice:')) {
+            const opts = sid.split(':')[2]?.split(',') ?? []
+            return opts.some((id) => getSkillById(id)?.name.toLowerCase().includes(term))
+          }
           const skill = getSkillById(sid)
           return skill?.name.toLowerCase().includes(term)
         })
@@ -103,6 +107,11 @@ export function StepOccupation() {
           {occ.skills.map((sid) => {
             if (sid === 'any') return 'Dowolna'
             if (sid === 'any_academic') return 'Dowolna (akad.)'
+            if (sid.startsWith('choice:')) {
+              const opts = sid.split(':')[2]?.split(',') ?? []
+              const names = opts.map((id) => getSkillById(id)?.name ?? id)
+              return `[${names.join('/')}]`
+            }
             const skill = getSkillById(sid)
             return skill?.name ?? sid
           }).join(', ')}

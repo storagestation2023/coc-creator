@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
-import { Plus, Trash2, Search } from 'lucide-react'
+import { Plus, Trash2, Search, Home } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
-import { getEquipmentByCategory } from '@/data/equipment'
+import { getEquipmentByCategory, getHousingForCreditRating } from '@/data/equipment'
 import { getWeaponsForEra, type Weapon } from '@/data/weapons'
 import { getWealthBracket } from '@/data/eras'
 import { getSkillById } from '@/data/skills'
@@ -10,6 +10,18 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 
+function parsePriceToNumber(price: string): number {
+  // Extract numeric value from price string like "260 $", "0,50 $", "20 $/mies."
+  const cleaned = price.replace(/[^0-9,.]/g, '').replace(',', '.')
+  return parseFloat(cleaned) || 0
+}
+
+function parseWealthToNumber(wealth: string): number {
+  // Parse wealth strings like "50 $ (suma)", "250 $", "2 500 $ (suma)"
+  const cleaned = wealth.replace(/\(suma\)/g, '').replace(/[^0-9,.]/g, '').replace(/\s/g, '').replace(',', '.')
+  return parseFloat(cleaned) || 0
+}
+
 export function StepEquipment() {
   const store = useCharacterStore()
   const era = store.era as Era
@@ -17,6 +29,7 @@ export function StepEquipment() {
     (typeof getSkillById('majetnosc')?.base === 'number' ? (getSkillById('majetnosc')?.base as number) : 0)
 
   const wealth = getWealthBracket(era, creditRating)
+  const housing = useMemo(() => getHousingForCreditRating(creditRating), [creditRating])
 
   const [selectedItems, setSelectedItems] = useState<string[]>(store.equipment)
   const [customItems, setCustomItems] = useState<string[]>(store.customItems)
@@ -26,6 +39,20 @@ export function StepEquipment() {
 
   const equipmentByCategory = useMemo(() => getEquipmentByCategory(era), [era])
   const weapons = useMemo(() => getWeaponsForEra(era), [era])
+
+  // Budget tracking: calculate total spent from selected catalog items
+  const totalSpent = useMemo(() => {
+    let sum = 0
+    for (const category of Object.values(equipmentByCategory)) {
+      for (const item of category) {
+        const count = selectedItems.filter((name) => name === item.name).length
+        if (count > 0) sum += parsePriceToNumber(item.price) * count
+      }
+    }
+    return sum
+  }, [selectedItems, equipmentByCategory])
+
+  const availableCash = parseWealthToNumber(wealth.cash)
 
   const addItem = (itemName: string) => {
     setSelectedItems((prev) => [...prev, itemName])
@@ -61,6 +88,8 @@ export function StepEquipment() {
     store.nextStep()
   }
 
+  const overBudget = totalSpent > availableCash
+
   return (
     <Card title="Ekwipunek">
       {/* Wealth summary */}
@@ -81,6 +110,33 @@ export function StepEquipment() {
         </div>
         <p className="text-xs text-coc-text-muted mt-2">
           Majętność: {creditRating} — dobieraj ekwipunek odpowiednio do statusu postaci.
+        </p>
+      </div>
+
+      {/* Budget tracker */}
+      <div className="mb-4">
+        <Badge variant={overBudget ? 'danger' : 'success'}>
+          Wydano: {totalSpent.toFixed(2)} $ / Dostępne: {availableCash.toFixed(2)} $
+          {overBudget && ' — Przekroczono budżet!'}
+        </Badge>
+      </div>
+
+      {/* Housing info panel (auto-displayed, not selectable) */}
+      <div className="bg-coc-surface-light border border-coc-border rounded-lg p-3 mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Home className="w-4 h-4 text-coc-accent-light" />
+          <h4 className="text-sm font-medium">Mieszkanie (wg Majętności)</h4>
+        </div>
+        <div className="space-y-1.5">
+          {housing.map((h, i) => (
+            <div key={i} className="text-sm">
+              <span className="font-medium">{h.label}</span>
+              <span className="text-coc-text-muted ml-2">— {h.description}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-coc-text-muted mt-2">
+          Mieszkanie wynika z poziomu Majętności i nie jest wybierane osobno.
         </p>
       </div>
 

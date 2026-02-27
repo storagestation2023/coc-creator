@@ -37,11 +37,9 @@ export const OCCUPATIONS: Occupation[] = [
       'zastraszanie',
       'prowadzenie_samochodu',
       'spostrzegawczosc',
-      'perswazja',
+      'choice:1:perswazja,gadanina,urok_osobisty',
     ],
     credit_rating: { min: 20, max: 40 },
-    suggested_skills_note:
-      'Wybierz 2 z: Korzystanie z Komputerów, Elektryka, Spostrzegawczość, Perswazja',
   },
   {
     id: 'detektyw_agencji',
@@ -73,7 +71,7 @@ export const OCCUPATIONS: Occupation[] = [
       'bron_krotka',
       'prawo',
       'nasluchiwanie',
-      'perswazja',
+      'choice:1:perswazja,gadanina,urok_osobisty',
       'psychologia',
       'spostrzegawczosc',
       'zastraszanie',
@@ -91,7 +89,7 @@ export const OCCUPATIONS: Occupation[] = [
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
       'bijatyka',
-      'gadanina',
+      'choice:1:gadanina,perswazja,urok_osobisty',
       'bron_krotka',
       'zastraszanie',
       'prawo',
@@ -135,7 +133,7 @@ export const OCCUPATIONS: Occupation[] = [
       'korzystanie_z_bibliotek',
       'perswazja',
       'psychologia',
-      'urok_osobisty',
+      'choice:1:urok_osobisty,gadanina,zastraszanie',
       'jezyk_ojczysty',
       'any',
     ],
@@ -151,7 +149,7 @@ export const OCCUPATIONS: Occupation[] = [
       'bron_krotka',
       'prawo',
       'korzystanie_z_bibliotek',
-      'gadanina',
+      'choice:1:gadanina,perswazja,urok_osobisty',
       'spostrzegawczosc',
       'psychologia',
       'ukrywanie',
@@ -173,7 +171,7 @@ export const OCCUPATIONS: Occupation[] = [
       'korzystanie_z_bibliotek',
       'perswazja',
       'psychologia',
-      'urok_osobisty',
+      'choice:1:urok_osobisty,zastraszanie,gadanina',
       'jezyk_ojczysty',
       'any',
     ],
@@ -191,7 +189,7 @@ export const OCCUPATIONS: Occupation[] = [
       'ksiegowosc',
       'bron_krotka',
       'nawigacja',
-      'perswazja',
+      'choice:1:perswazja,gadanina,urok_osobisty',
       'psychologia',
       'zastraszanie',
       'karabin_strzelba',
@@ -249,7 +247,7 @@ export const OCCUPATIONS: Occupation[] = [
     skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
     skills: [
       'jezyk_obcy',
-      'gadanina',
+      'choice:1:gadanina,urok_osobisty,perswazja',
       'nasluchiwanie',
       'psychologia',
       'ukrywanie',
@@ -606,10 +604,10 @@ export const OCCUPATIONS: Occupation[] = [
       'sztuka_rzemioslo',
       'charakteryzacja',
       'psychologia',
-      'gadanina',
+      'choice:1:gadanina,urok_osobisty,perswazja,zastraszanie',
       'nasluchiwanie',
-      'urok_osobisty',
       'jezyk_obcy',
+      'any',
       'any',
     ],
     credit_rating: { min: 9, max: 40 },
@@ -642,7 +640,7 @@ export const OCCUPATIONS: Occupation[] = [
       'sztuka_rzemioslo',
       'charakteryzacja',
       'urok_osobisty',
-      'gadanina',
+      'choice:1:gadanina,perswazja',
       'nasluchiwanie',
       'psychologia',
       'spostrzegawczosc',
@@ -661,12 +659,48 @@ export const OCCUPATIONS: Occupation[] = [
       'historia',
       'jezyk_ojczysty',
       'korzystanie_z_bibliotek',
-      'perswazja',
+      'choice:1:perswazja,gadanina,urok_osobisty,zastraszanie',
       'psychologia',
       'spostrzegawczosc',
       'any',
     ],
     credit_rating: { min: 9, max: 30 },
+  },
+  {
+    id: 'dziennikarz_sledczy',
+    name: 'Dziennikarz śledczy',
+    description: 'Dziennikarz specjalizujący się w dochodzeniach i ujawnianiu afer.',
+    category: 'arts_entertainment',
+    skill_formula: { characteristics: ['EDU'], multiplier: 4 },
+    skills: [
+      'sztuka_rzemioslo',
+      'jezyk_ojczysty',
+      'korzystanie_z_bibliotek',
+      'prawo',
+      'choice:1:perswazja,gadanina,urok_osobisty,zastraszanie',
+      'psychologia',
+      'spostrzegawczosc',
+      'ukrywanie',
+    ],
+    credit_rating: { min: 9, max: 30 },
+  },
+  {
+    id: 'reporter',
+    name: 'Reporter',
+    description: 'Dziennikarz terenowy zbierający materiały i relacjonujący wydarzenia na żywo.',
+    category: 'arts_entertainment',
+    skill_formula: { characteristics: ['EDU'], multiplier: 4 },
+    skills: [
+      'sztuka_rzemioslo',
+      'jezyk_ojczysty',
+      'korzystanie_z_bibliotek',
+      'choice:1:perswazja,gadanina,urok_osobisty,zastraszanie',
+      'psychologia',
+      'spostrzegawczosc',
+      'prowadzenie_samochodu',
+      'any',
+    ],
+    credit_rating: { min: 9, max: 25 },
   },
   {
     id: 'fotograf',
@@ -677,7 +711,7 @@ export const OCCUPATIONS: Occupation[] = [
     skills: [
       'sztuka_rzemioslo',
       'nauka',
-      'perswazja',
+      'choice:1:perswazja,gadanina,urok_osobisty',
       'ukrywanie',
       'spostrzegawczosc',
       'psychologia',
@@ -699,7 +733,7 @@ export const OCCUPATIONS: Occupation[] = [
       'korzystanie_z_bibliotek',
       'sztuka_rzemioslo',
       'spostrzegawczosc',
-      'perswazja',
+      'choice:1:perswazja,gadanina,urok_osobisty',
       'any',
     ],
     credit_rating: { min: 10, max: 40 },
@@ -712,7 +746,7 @@ export const OCCUPATIONS: Occupation[] = [
     skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
     skills: [
       'sztuka_rzemioslo',
-      'gadanina',
+      'choice:1:gadanina,perswazja',
       'nasluchiwanie',
       'psychologia',
       'urok_osobisty',
@@ -772,7 +806,7 @@ export const OCCUPATIONS: Occupation[] = [
       'zastraszanie',
       'psychologia',
       'ukrywanie',
-      'urok_osobisty',
+      'choice:1:urok_osobisty,gadanina',
       'perswazja',
       'bijatyka',
       'any',
@@ -793,9 +827,9 @@ export const OCCUPATIONS: Occupation[] = [
       'bron_krotka',
       'zastraszanie',
       'psychologia',
-      'gadanina',
+      'choice:1:gadanina,urok_osobisty,perswazja',
       'prowadzenie_samochodu',
-      'urok_osobisty',
+      'choice:1:bron_obuchowa,karabin_strzelba',
       'any',
     ],
     credit_rating: { min: 9, max: 60 },
@@ -814,7 +848,7 @@ export const OCCUPATIONS: Occupation[] = [
       'nasluchiwanie',
       'psychologia',
       'spostrzegawczosc',
-      'zastraszanie',
+      'choice:1:zastraszanie,perswazja',
       'urok_osobisty',
       'any',
     ],
@@ -829,13 +863,13 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'crime_underworld',
     skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
     skills: [
-      'gadanina',
-      'urok_osobisty',
+      'choice:1:gadanina,urok_osobisty',
       'psychologia',
-      'zastraszanie',
-      'perswazja',
+      'choice:1:zastraszanie,perswazja',
       'ukrywanie',
       'spostrzegawczosc',
+      'nasluchiwanie',
+      'any',
       'any',
     ],
     credit_rating: { min: 5, max: 50 },
@@ -848,7 +882,7 @@ export const OCCUPATIONS: Occupation[] = [
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
       'bijatyka',
-      'gadanina',
+      'choice:1:gadanina,urok_osobisty,perswazja',
       'zastraszanie',
       'spostrzegawczosc',
       'ukrywanie',
@@ -859,6 +893,42 @@ export const OCCUPATIONS: Occupation[] = [
     credit_rating: { min: 5, max: 65 },
     suggested_skills_note:
       'Formuła: EDU×2 + najlepsza z (DEX lub STR) × 2',
+  },
+  {
+    id: 'kieszonkowiec',
+    name: 'Kieszonkowiec',
+    description: 'Złodziejaszek kradnący portfele i kosztowności na zatłoczonych ulicach.',
+    category: 'crime_underworld',
+    skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
+    skills: [
+      'zreczne_palce',
+      'choice:1:gadanina,urok_osobisty',
+      'spostrzegawczosc',
+      'ukrywanie',
+      'nasluchiwanie',
+      'psychologia',
+      'any',
+      'any',
+    ],
+    credit_rating: { min: 5, max: 25 },
+  },
+  {
+    id: 'szmugler',
+    name: 'Szmugler',
+    description: 'Przemytnik przewożący towary przez granicę z naruszeniem prawa.',
+    category: 'crime_underworld',
+    skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
+    skills: [
+      'bron_krotka',
+      'nawigacja',
+      'choice:1:gadanina,urok_osobisty,perswazja,zastraszanie',
+      'prowadzenie_samochodu',
+      'ukrywanie',
+      'prawo',
+      'spostrzegawczosc',
+      'any',
+    ],
+    credit_rating: { min: 20, max: 60 },
   },
 
   // === Przyroda i podróże ===
@@ -1098,6 +1168,24 @@ export const OCCUPATIONS: Occupation[] = [
 
   // === Handel i usługi ===
   {
+    id: 'marszand',
+    name: 'Marszand',
+    description: 'Handlarz dziełami sztuki, pośrednik między artystami a kolekcjonerami.',
+    category: 'trade_services',
+    skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
+    skills: [
+      'sztuka_rzemioslo',
+      'wycena',
+      'historia',
+      'choice:1:urok_osobisty,gadanina,perswazja',
+      'psychologia',
+      'spostrzegawczosc',
+      'jezyk_obcy',
+      'any',
+    ],
+    credit_rating: { min: 40, max: 90 },
+  },
+  {
     id: 'barman',
     name: 'Barman',
     description: 'Pracownik baru serwujący drinki i wysłuchujący historii klientów.',
@@ -1105,12 +1193,12 @@ export const OCCUPATIONS: Occupation[] = [
     skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
     skills: [
       'ksiegowosc',
-      'gadanina',
+      'choice:1:gadanina,urok_osobisty,perswazja',
       'nasluchiwanie',
       'psychologia',
       'spostrzegawczosc',
       'bijatyka',
-      'urok_osobisty',
+      'any',
       'any',
     ],
     credit_rating: { min: 8, max: 25 },
@@ -1125,7 +1213,7 @@ export const OCCUPATIONS: Occupation[] = [
       'sztuka_rzemioslo',
       'jezdziectwo',
       'prawo',
-      'urok_osobisty',
+      'choice:1:urok_osobisty,gadanina,perswazja',
       'spostrzegawczosc',
       'bron_krotka',
       'any',
@@ -1143,7 +1231,7 @@ export const OCCUPATIONS: Occupation[] = [
     skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
     skills: [
       'sztuka_rzemioslo',
-      'gadanina',
+      'choice:1:gadanina,perswazja',
       'jezyk_obcy',
       'jezdziectwo',
       'urok_osobisty',
@@ -1164,7 +1252,7 @@ export const OCCUPATIONS: Occupation[] = [
       'gadanina',
       'nasluchiwanie',
       'psychologia',
-      'urok_osobisty',
+      'choice:1:urok_osobisty,perswazja',
       'wycena',
       'any',
       'any',
@@ -1204,7 +1292,7 @@ export const OCCUPATIONS: Occupation[] = [
       'perswazja',
       'psychologia',
       'prowadzenie_samochodu',
-      'urok_osobisty',
+      'choice:1:urok_osobisty,zastraszanie',
       'any',
     ],
     credit_rating: { min: 9, max: 40 },
@@ -1241,7 +1329,7 @@ export const OCCUPATIONS: Occupation[] = [
       'prawo',
       'psychologia',
       'spostrzegawczosc',
-      'urok_osobisty',
+      'choice:1:urok_osobisty,perswazja',
       'prowadzenie_samochodu',
       'any',
     ],
@@ -1256,7 +1344,7 @@ export const OCCUPATIONS: Occupation[] = [
     skills: [
       'ksiegowosc',
       'gadanina',
-      'urok_osobisty',
+      'choice:1:urok_osobisty,zastraszanie',
       'perswazja',
       'prawo',
       'psychologia',
@@ -1338,11 +1426,11 @@ export const OCCUPATIONS: Occupation[] = [
     skills: [
       'ksiegowosc',
       'prawo',
-      'gadanina',
+      'choice:1:gadanina,urok_osobisty',
       'perswazja',
       'psychologia',
       'zastraszanie',
-      'urok_osobisty',
+      'any',
       'any',
     ],
     credit_rating: { min: 5, max: 30 },
@@ -1359,7 +1447,7 @@ export const OCCUPATIONS: Occupation[] = [
       'prawo',
       'perswazja',
       'psychologia',
-      'urok_osobisty',
+      'choice:1:urok_osobisty,gadanina',
       'any',
       'any',
     ],
@@ -1378,7 +1466,7 @@ export const OCCUPATIONS: Occupation[] = [
       'perswazja',
       'spostrzegawczosc',
       'psychologia',
-      'urok_osobisty',
+      'choice:1:urok_osobisty,gadanina',
       'any',
     ],
     credit_rating: { min: 30, max: 70 },
@@ -1413,11 +1501,47 @@ export const OCCUPATIONS: Occupation[] = [
       'korzystanie_z_bibliotek',
       'perswazja',
       'psychologia',
-      'urok_osobisty',
+      'choice:1:urok_osobisty,gadanina',
       'any',
       'any',
     ],
     credit_rating: { min: 9, max: 15 },
+  },
+  {
+    id: 'polityk',
+    name: 'Polityk',
+    description: 'Działacz polityczny walczący o władzę i realizujący swoje wizje.',
+    category: 'administration',
+    skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
+    skills: [
+      'urok_osobisty',
+      'historia',
+      'choice:1:perswazja,gadanina,zastraszanie',
+      'psychologia',
+      'prawo',
+      'korzystanie_z_bibliotek',
+      'jezyk_ojczysty',
+      'any',
+    ],
+    credit_rating: { min: 50, max: 90 },
+  },
+  {
+    id: 'dyplomata',
+    name: 'Dyplomata',
+    description: 'Przedstawiciel rządu prowadzący negocjacje z obcymi mocarstwami.',
+    category: 'administration',
+    skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
+    skills: [
+      'urok_osobisty',
+      'choice:1:perswazja,gadanina',
+      'jezyk_obcy',
+      'historia',
+      'prawo',
+      'psychologia',
+      'jezyk_ojczysty',
+      'any',
+    ],
+    credit_rating: { min: 40, max: 90 },
   },
 
   // === Religia i okultyzm ===
@@ -1430,7 +1554,7 @@ export const OCCUPATIONS: Occupation[] = [
     skills: [
       'sztuka_rzemioslo',
       'psychologia',
-      'zastraszanie',
+      'choice:1:zastraszanie,gadanina,urok_osobisty',
       'korzystanie_z_bibliotek',
       'prowadzenie_samochodu',
       'spostrzegawczosc',
@@ -1506,11 +1630,29 @@ export const OCCUPATIONS: Occupation[] = [
       'perswazja',
       'psychologia',
       'urok_osobisty',
-      'zastraszanie',
+      'choice:1:zastraszanie,gadanina',
       'any',
       'any',
     ],
     credit_rating: { min: 30, max: 60 },
+  },
+  {
+    id: 'medium',
+    name: 'Medium / Jasnowidz',
+    description: 'Osoba twierdzaca, że potrafi kontaktować się z duchami lub przewidywać przyszłość.',
+    category: 'religion_occult',
+    skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
+    skills: [
+      'okultyzm',
+      'sztuka_rzemioslo',
+      'choice:1:gadanina,urok_osobisty,perswazja',
+      'psychologia',
+      'historia',
+      'ukrywanie',
+      'nasluchiwanie',
+      'any',
+    ],
+    credit_rating: { min: 9, max: 30 },
   },
 
   // === Sport i czyn ===
@@ -1711,4 +1853,34 @@ export function getOccupationsForEra(era: Era): Occupation[] {
   return OCCUPATIONS.filter(
     (occupation) => !occupation.era || occupation.era.includes(era),
   )
+}
+
+/**
+ * Parse a skill slot marker.
+ * Supported formats:
+ * - 'skill_id' — fixed skill
+ * - 'any' — choose any skill
+ * - 'any_academic' — choose any academic skill
+ * - 'choice:N:skill1,skill2,...' — choose N from specific skills
+ */
+export interface ChoiceSlot {
+  count: number
+  options: string[]
+}
+
+export function parseSkillSlot(sid: string): { type: 'fixed'; id: string } | { type: 'any' } | { type: 'any_academic' } | { type: 'choice'; choice: ChoiceSlot } {
+  if (sid === 'any') return { type: 'any' }
+  if (sid === 'any_academic') return { type: 'any_academic' }
+  if (sid.startsWith('choice:')) {
+    const parts = sid.split(':')
+    const count = parseInt(parts[1], 10) || 1
+    const options = parts[2]?.split(',') ?? []
+    return { type: 'choice', choice: { count, options } }
+  }
+  return { type: 'fixed', id: sid }
+}
+
+/** Check if a skill slot marker represents a special (non-fixed) slot. */
+export function isSpecialSlot(sid: string): boolean {
+  return sid === 'any' || sid === 'any_academic' || sid.startsWith('choice:')
 }

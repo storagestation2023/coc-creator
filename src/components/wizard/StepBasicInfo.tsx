@@ -1,57 +1,102 @@
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
+import { Dices } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
-import { basicInfoSchema, type BasicInfoFormData } from '@/lib/validation'
+import { randomName } from '@/data/names1920s'
 import { Card } from '@/components/ui/Card'
-import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+
+type Gender = 'M' | 'F'
 
 export function StepBasicInfo() {
   const store = useCharacterStore()
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<BasicInfoFormData>({
-    resolver: zodResolver(basicInfoSchema),
-    defaultValues: {
-      name: store.name || '',
-      gender: store.gender || '',
-      appearance: store.appearance || '',
-    },
-  })
+  const [gender, setGender] = useState<Gender | null>((store.gender as Gender) || null)
+  const [name, setName] = useState(store.name || '')
+  const [appearance, setAppearance] = useState(store.appearance || '')
 
-  const onSubmit = (data: BasicInfoFormData) => {
-    store.setBasicInfo({ name: data.name, gender: data.gender, appearance: data.appearance ?? '' })
+  const handleRandomName = () => {
+    if (!gender) return
+    setName(randomName(gender))
+  }
+
+  const canContinue = name.trim().length > 0 && gender !== null
+
+  const handleNext = () => {
+    if (!canContinue) return
+    store.setBasicInfo({ name: name.trim(), gender: gender!, appearance: appearance.trim() })
     store.nextStep()
   }
 
   return (
     <Card title="Dane podstawowe">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input
-          label="Imię i nazwisko"
-          placeholder="np. Herbert West"
-          error={errors.name?.message}
-          {...register('name')}
-        />
+      <div className="space-y-4">
+        {/* Gender toggle */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-coc-text-muted">Płeć</label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setGender('M')}
+              className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer border ${
+                gender === 'M'
+                  ? 'bg-coc-accent/20 border-coc-accent/40 text-coc-accent-light'
+                  : 'bg-coc-surface-light border-coc-border text-coc-text-muted hover:border-coc-accent/30'
+              }`}
+            >
+              Mężczyzna
+            </button>
+            <button
+              type="button"
+              onClick={() => setGender('F')}
+              className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer border ${
+                gender === 'F'
+                  ? 'bg-coc-accent/20 border-coc-accent/40 text-coc-accent-light'
+                  : 'bg-coc-surface-light border-coc-border text-coc-text-muted hover:border-coc-accent/30'
+              }`}
+            >
+              Kobieta
+            </button>
+          </div>
+        </div>
 
-        <Input
-          label="Płeć"
-          placeholder="np. Mężczyzna"
-          error={errors.gender?.message}
-          {...register('gender')}
-        />
+        {/* Name with randomizer */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-coc-text-muted">Imię i nazwisko</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="np. Herbert West"
+              className="flex-1 px-3 py-2 bg-coc-surface-light border border-coc-border rounded-lg text-coc-text placeholder:text-coc-text-muted/50 focus:outline-none focus:border-coc-accent-light transition-colors"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={handleRandomName}
+              disabled={!gender}
+              title="Losuj imię i nazwisko"
+            >
+              <Dices className="w-4 h-4" />
+              Losuj
+            </Button>
+          </div>
+          {!gender && (
+            <p className="text-xs text-coc-text-muted">Wybierz płeć, aby losować imię.</p>
+          )}
+        </div>
 
+        {/* Appearance */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-coc-text-muted">
             Wygląd (opcjonalnie)
           </label>
           <textarea
+            value={appearance}
+            onChange={(e) => setAppearance(e.target.value)}
             placeholder="Opis wyglądu postaci..."
             className="w-full px-3 py-2 bg-coc-surface-light border border-coc-border rounded-lg text-coc-text placeholder:text-coc-text-muted/50 focus:outline-none focus:border-coc-accent-light transition-colors min-h-[80px] resize-y"
-            {...register('appearance')}
           />
         </div>
 
@@ -59,9 +104,11 @@ export function StepBasicInfo() {
           <Button type="button" variant="secondary" onClick={() => store.prevStep()}>
             Wstecz
           </Button>
-          <Button type="submit">Dalej</Button>
+          <Button type="button" onClick={handleNext} disabled={!canContinue}>
+            Dalej
+          </Button>
         </div>
-      </form>
+      </div>
     </Card>
   )
 }

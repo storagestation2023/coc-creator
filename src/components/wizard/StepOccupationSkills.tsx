@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useCharacterStore } from '@/stores/characterStore'
-import { OCCUPATIONS } from '@/data/occupations'
+import { OCCUPATIONS, parseSkillSlot, isSpecialSlot } from '@/data/occupations'
 import { getSkillById, getSkillsForEra } from '@/data/skills'
 import { useSkillPoints } from '@/hooks/useSkillPoints'
 import type { Characteristics } from '@/types/character'
@@ -30,25 +30,32 @@ export function StepOccupationSkills() {
 
   const [skillPoints, setSkillPoints] = useState<Record<string, number>>(store.occupationSkillPoints)
 
-  // Handle 'any' skill slots: player can pick from all skills
-  const [chosenAnySkills, setChosenAnySkills] = useState<Record<number, string>>(() => {
-    // Reconstruct chosen 'any' skills from stored points
-    const anySlots: Record<number, string> = {}
+  // Handle special skill slots: player picks from pool or specific options
+  const [chosenSlotSkills, setChosenSlotSkills] = useState<Record<number, string>>(() => {
+    // Reconstruct chosen skills from stored points
+    const slots: Record<number, string> = {}
     if (occupation) {
+      const fixedSkills = occupation.skills.filter((s) => !isSpecialSlot(s))
       occupation.skills.forEach((sid, i) => {
-        if (sid.startsWith('any') && store.occupationSkillPoints) {
-          // Find a skill that has points but isn't in the fixed skill list
-          const fixedSkills = occupation.skills.filter((s) => !s.startsWith('any'))
+        const parsed = parseSkillSlot(sid)
+        if (parsed.type === 'any' || parsed.type === 'any_academic') {
           for (const [skillId] of Object.entries(store.occupationSkillPoints)) {
-            if (!fixedSkills.includes(skillId) && !Object.values(anySlots).includes(skillId)) {
-              anySlots[i] = skillId
+            if (!fixedSkills.includes(skillId) && !Object.values(slots).includes(skillId)) {
+              slots[i] = skillId
+              break
+            }
+          }
+        } else if (parsed.type === 'choice') {
+          for (const optId of parsed.choice.options) {
+            if (store.occupationSkillPoints[optId] && !Object.values(slots).includes(optId)) {
+              slots[i] = optId
               break
             }
           }
         }
       })
     }
-    return anySlots
+    return slots
   })
 
   const { totalOccupationPoints, usedOccupationPoints, remainingOccupationPoints } =
@@ -70,10 +77,22 @@ export function StepOccupationSkills() {
     return <Card title="Umiejętności zawodowe"><p>Brak wybranego zawodu.</p></Card>
   }
 
+  // Collect all used skill IDs (fixed + chosen) to prevent duplicates
+  const usedIds = new Set([
+    ...occupation.skills.filter((s) => !isSpecialSlot(s)),
+    ...Object.values(chosenSlotSkills),
+    'majetnosc',
+  ])
 
   const handlePointChange = (skillId: string, delta: number) => {
+    let effectiveDelta = delta
+    if (delta > 0) {
+      if (remainingOccupationPoints <= 0) return
+      effectiveDelta = Math.min(delta, remainingOccupationPoints)
+    }
+
     const current = skillPoints[skillId] ?? 0
-    const newVal = Math.max(0, current + delta)
+    const newVal = Math.max(0, current + effectiveDelta)
     const newPoints = { ...skillPoints, [skillId]: newVal }
     if (newVal === 0) delete newPoints[skillId]
     setSkillPoints(newPoints)
@@ -81,15 +100,15 @@ export function StepOccupationSkills() {
     if (skillId === 'majetnosc') setCreditRatingPoints(newVal)
   }
 
-  const handleChooseAnySkill = (slotIndex: number, skillId: string) => {
+  const handleChooseSlotSkill = (slotIndex: number, skillId: string) => {
     // Remove points from old choice
-    const oldChoice = chosenAnySkills[slotIndex]
+    const oldChoice = chosenSlotSkills[slotIndex]
     if (oldChoice && skillPoints[oldChoice]) {
       const newPoints = { ...skillPoints }
       delete newPoints[oldChoice]
       setSkillPoints(newPoints)
     }
-    setChosenAnySkills((prev) => ({ ...prev, [slotIndex]: skillId }))
+    setChosenSlotSkills((prev) => ({ ...prev, [slotIndex]: skillId }))
   }
 
   // Credit rating validation
@@ -106,6 +125,82 @@ export function StepOccupationSkills() {
     store.nextStep()
   }
 
+  const renderSlot = (sid: string, i: number) => {
+    const parsed = parseSkillSlot(sid)
+
+    if (parsed.type === 'fixed') {
+      const skill = getSkillById(parsed.id)
+      if (!skill) return null
+      return (
+        <SkillRow
+          key={parsed.id}
+          name={skill.name}
+          baseValue={getBaseValue(parsed.id, chars)}
+          addedPoints={skillPoints[parsed.id] ?? 0}
+          onPointsChange={(d) => handlePointChange(parsed.id, d)}
+          maxAdd={maxSkillValue - getBaseValue(parsed.id, chars)}
+        />
+      )
+    }
+
+    // 'any', 'any_academic', or 'choice' slot
+    const chosenId = chosenSlotSkills[i]
+    let pool: typeof availableSkills
+    let label: string
+
+    if (parsed.type === 'any') {
+      pool = availableSkills
+      label = 'Dowolna'
+    } else if (parsed.type === 'any_academic') {
+      pool = academicSkills
+      label = 'Dowolna (akademicka)'
+    } else {
+      // choice slot - filter to only the allowed options
+      pool = parsed.choice.options
+        .map((id) => getSkillById(id))
+        .filter((s): s is NonNullable<typeof s> => s !== undefined)
+      const optionNames = pool.map((s) => s.name).join(', ')
+      label = `Wybierz z: ${optionNames}`
+    }
+
+    return (
+      <div key={`slot-${i}`} className="py-1.5 px-2 rounded bg-coc-surface-light/30">
+        <div className="flex items-center gap-2 mb-1">
+          <Badge variant={parsed.type === 'choice' ? 'default' : 'warning'}>
+            {parsed.type === 'choice' ? 'Wybór' : label}
+          </Badge>
+          <select
+            value={chosenId ?? ''}
+            onChange={(e) => handleChooseSlotSkill(i, e.target.value)}
+            className="flex-1 px-2 py-1 text-sm bg-coc-surface-light border border-coc-border rounded text-coc-text cursor-pointer"
+          >
+            <option value="">— Wybierz umiejętność —</option>
+            {pool
+              .filter((s) => !usedIds.has(s.id) || s.id === chosenId)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({typeof s.base === 'number' ? s.base : s.base === 'half_dex' ? '½ZRĘ' : 'WYK'}%)
+                </option>
+              ))
+            }
+          </select>
+        </div>
+        {parsed.type === 'choice' && (
+          <p className="text-xs text-coc-text-muted px-1 mb-1">{label}</p>
+        )}
+        {chosenId && (
+          <SkillRow
+            name={getSkillById(chosenId)?.name ?? chosenId}
+            baseValue={getBaseValue(chosenId, chars)}
+            addedPoints={skillPoints[chosenId] ?? 0}
+            onPointsChange={(d) => handlePointChange(chosenId, d)}
+            maxAdd={maxSkillValue - getBaseValue(chosenId, chars)}
+          />
+        )}
+      </div>
+    )
+  }
+
   return (
     <Card title="Umiejętności zawodowe">
       <div className="flex flex-wrap gap-3 mb-4">
@@ -119,69 +214,12 @@ export function StepOccupationSkills() {
       </div>
 
       <div className="space-y-1 mb-4">
-        {/* Fixed skills */}
-        {occupation.skills.map((sid, i) => {
-          if (sid.startsWith('any')) {
-            // 'any' slot - show dropdown
-            const chosenId = chosenAnySkills[i]
-            const pool = sid === 'any_academic' ? academicSkills : availableSkills
-            const usedIds = new Set([
-              ...occupation.skills.filter((s) => !s.startsWith('any')),
-              ...Object.values(chosenAnySkills),
-              'majetnosc',
-            ])
-
-            return (
-              <div key={`any-${i}`} className="py-1.5 px-2 rounded bg-coc-surface-light/30">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge variant="warning">
-                    {sid === 'any_academic' ? 'Dowolna (akademicka)' : 'Dowolna'}
-                  </Badge>
-                  <select
-                    value={chosenId ?? ''}
-                    onChange={(e) => handleChooseAnySkill(i, e.target.value)}
-                    className="flex-1 px-2 py-1 text-sm bg-coc-surface-light border border-coc-border rounded text-coc-text cursor-pointer"
-                  >
-                    <option value="">— Wybierz umiejętność —</option>
-                    {pool
-                      .filter((s) => !usedIds.has(s.id) || s.id === chosenId)
-                      .map((s) => (
-                        <option key={s.id} value={s.id}>{s.name} ({typeof s.base === 'number' ? s.base : s.base === 'half_dex' ? '½ZRĘ' : 'WYK'}%)</option>
-                      ))
-                    }
-                  </select>
-                </div>
-                {chosenId && (
-                  <SkillRow
-                    name={getSkillById(chosenId)?.name ?? chosenId}
-                    baseValue={getBaseValue(chosenId, chars)}
-                    addedPoints={skillPoints[chosenId] ?? 0}
-                    onPointsChange={(d) => handlePointChange(chosenId, d)}
-                    maxAdd={maxSkillValue - getBaseValue(chosenId, chars)}
-                  />
-                )}
-              </div>
-            )
-          }
-
-          const skill = getSkillById(sid)
-          if (!skill) return null
-          return (
-            <SkillRow
-              key={sid}
-              name={skill.name}
-              baseValue={getBaseValue(sid, chars)}
-              addedPoints={skillPoints[sid] ?? 0}
-              onPointsChange={(d) => handlePointChange(sid, d)}
-              maxAdd={maxSkillValue - getBaseValue(sid, chars)}
-            />
-          )
-        })}
+        {occupation.skills.map((sid, i) => renderSlot(sid, i))}
 
         {/* Credit Rating (always part of occupation) */}
         <div className="border-t border-coc-border pt-2 mt-2">
           <SkillRow
-            name="Majętność (Majętność)"
+            name="Majętność"
             baseValue={creditRatingBase}
             addedPoints={creditRatingPoints}
             onPointsChange={(d) => handlePointChange('majetnosc', d)}

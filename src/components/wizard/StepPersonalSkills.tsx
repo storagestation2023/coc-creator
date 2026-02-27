@@ -43,11 +43,15 @@ export function StepPersonalSkills() {
   }, [era])
 
   const handlePointChange = (skillId: string, delta: number) => {
-    const current = personalPoints[skillId] ?? 0
-    const newVal = Math.max(0, current + delta)
+    // Cap positive delta to remaining points
+    let effectiveDelta = delta
+    if (delta > 0) {
+      if (remainingPersonalPoints <= 0) return
+      effectiveDelta = Math.min(delta, remainingPersonalPoints)
+    }
 
-    // Prevent going over remaining points
-    if (delta > 0 && remainingPersonalPoints <= 0) return
+    const current = personalPoints[skillId] ?? 0
+    const newVal = Math.max(0, current + effectiveDelta)
 
     const newPoints = { ...personalPoints, [skillId]: newVal }
     if (newVal === 0) delete newPoints[skillId]

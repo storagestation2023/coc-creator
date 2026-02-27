@@ -39,10 +39,11 @@ export function StepReview() {
   }
 
   const handleSubmit = async () => {
+    const inviteCodeId = store.inviteCodeId
     const success = await submit(store)
     if (success) {
       store.reset()
-      navigate('/success')
+      navigate('/success', { state: { inviteCodeId } })
     }
   }
 

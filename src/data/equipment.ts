@@ -10,6 +10,9 @@ export interface EquipmentItem {
 }
 
 export const EQUIPMENT_CATEGORIES = [
+  'Transport',
+  'Ubranie',
+  'Biżuteria i akcesoria',
   'Światło',
   'Obserwacja',
   'Fotografia',
@@ -20,6 +23,40 @@ export const EQUIPMENT_CATEGORIES = [
 ] as const
 
 export const EQUIPMENT_CATALOG: EquipmentItem[] = [
+  // === Transport ===
+  { id: 'ford_model_t', name: 'Ford Model T (1920)', category: 'Transport', price: '260 $', era: ['classic_1920s'] },
+  { id: 'chevrolet_490', name: 'Chevrolet 490 (1922)', category: 'Transport', price: '525 $', era: ['classic_1920s'] },
+  { id: 'dodge_touring', name: 'Dodge Brothers Touring (1923)', category: 'Transport', price: '1000 $', era: ['classic_1920s'] },
+  { id: 'buick_master_six', name: 'Buick Master Six (1925)', category: 'Transport', price: '1500 $', era: ['classic_1920s'] },
+  { id: 'packard_six', name: 'Packard Six (1928)', category: 'Transport', price: '2500 $', era: ['classic_1920s'] },
+  { id: 'cadillac_v8', name: 'Cadillac V-8 (1927)', category: 'Transport', price: '3350 $', era: ['classic_1920s'] },
+  { id: 'lincoln_model_l', name: 'Lincoln Model L (1924)', category: 'Transport', price: '4600 $', era: ['classic_1920s'] },
+  { id: 'motocykl_indian', name: 'Motocykl Indian Scout (1926)', category: 'Transport', price: '275 $', era: ['classic_1920s'] },
+  { id: 'rower_transport', name: 'Rower', category: 'Transport', price: '30 $' },
+  { id: 'kon_z_siodlem', name: 'Koń z siodłem', category: 'Transport', price: '150 $', era: ['classic_1920s', 'gaslight'] },
+  { id: 'powoz', name: 'Powóz', category: 'Transport', price: '200 $', era: ['gaslight'] },
+
+  // === Ubranie ===
+  { id: 'ubranie_kiepskie', name: 'Ubranie kiepskiej jakości', category: 'Ubranie', price: '0 $', description: 'Zniszczone, łatane ubranie' },
+  { id: 'ubranie_przecietne', name: 'Ubranie przeciętne', category: 'Ubranie', price: '15 $', description: 'Typowe ubranie robotnika lub urzędnika' },
+  { id: 'ubranie_dobre', name: 'Ubranie dobrej jakości', category: 'Ubranie', price: '50 $', description: 'Dobrze skrojone, solidne materiały' },
+  { id: 'ubranie_znakomite', name: 'Ubranie znakomitej jakości', category: 'Ubranie', price: '150 $', description: 'Szycie na miarę, najlepsze tkaniny' },
+  { id: 'garnitur_wieczorowy', name: 'Garnitur wieczorowy / suknia wieczorowa', category: 'Ubranie', price: '75 $', description: 'Strój na oficjalne okazje' },
+
+  // === Biżuteria i akcesoria ===
+  { id: 'zegarek_kieszk_prosty', name: 'Zegarek kieszonkowy (prosty)', category: 'Biżuteria i akcesoria', price: '5 $', era: ['classic_1920s', 'gaslight'] },
+  { id: 'zegarek_kieszk_srebrny', name: 'Zegarek kieszonkowy (srebrny)', category: 'Biżuteria i akcesoria', price: '25 $', era: ['classic_1920s', 'gaslight'] },
+  { id: 'zegarek_kieszk_zloty', name: 'Zegarek kieszonkowy (złoty)', category: 'Biżuteria i akcesoria', price: '100 $', era: ['classic_1920s', 'gaslight'] },
+  { id: 'zegarek_na_reke', name: 'Zegarek na rękę', category: 'Biżuteria i akcesoria', price: '15 $', era: ['classic_1920s', 'modern'] },
+  { id: 'obraczka', name: 'Obrączka', category: 'Biżuteria i akcesoria', price: '10 $' },
+  { id: 'pierscien', name: 'Pierścień z kamieniem', category: 'Biżuteria i akcesoria', price: '50 $' },
+  { id: 'naszyjnik', name: 'Naszyjnik', category: 'Biżuteria i akcesoria', price: '25 $' },
+  { id: 'broszka', name: 'Broszka', category: 'Biżuteria i akcesoria', price: '10 $' },
+  { id: 'spinki_mankietow', name: 'Spinki do mankietów', category: 'Biżuteria i akcesoria', price: '5 $' },
+  { id: 'laska_spacerowa', name: 'Laska spacerowa', category: 'Biżuteria i akcesoria', price: '5 $' },
+  { id: 'kapelusz', name: 'Kapelusz (fedora/cloche)', category: 'Biżuteria i akcesoria', price: '5 $', era: ['classic_1920s'] },
+  { id: 'parasol', name: 'Parasol', category: 'Biżuteria i akcesoria', price: '3 $' },
+
   // === Światło ===
   { id: 'flara', name: 'Flara (6 szt.)', category: 'Światło', price: '1 $', description: 'Świeci 1 godzinę' },
   { id: 'lampa_naftowa', name: 'Lampa naftowa', category: 'Światło', price: '2 $', description: 'Przenośna lampa' },
@@ -72,13 +109,10 @@ export const EQUIPMENT_CATALOG: EquipmentItem[] = [
   { id: 'spiworek', name: 'Śpiwór', category: 'Różne', price: '5 $' },
   { id: 'manierkka', name: 'Manierka', category: 'Różne', price: '1 $' },
   { id: 'notes_i_olowek', name: 'Notes i ołówek', category: 'Różne', price: '0,25 $' },
-  { id: 'zegarek_kieszonkowy', name: 'Zegarek kieszonkowy', category: 'Różne', price: '10 $', era: ['classic_1920s', 'gaslight'] },
-  { id: 'zegarek_reczny', name: 'Zegarek na rękę', category: 'Różne', price: '15 $', era: ['classic_1920s', 'modern'] },
   { id: 'zapałki', name: 'Zapałki (pudełko)', category: 'Różne', price: '0,05 $' },
   { id: 'zapalniczka', name: 'Zapalniczka', category: 'Różne', price: '1 $', era: ['classic_1920s', 'modern'] },
   { id: 'papier_listowy', name: 'Papier listowy i koperty', category: 'Różne', price: '0,50 $' },
   { id: 'gazeta', name: 'Gazeta', category: 'Różne', price: '0,05 $' },
-  { id: 'rower', name: 'Rower', category: 'Różne', price: '30 $' },
 ]
 
 export function getEquipmentForEra(era: Era): EquipmentItem[] {
@@ -93,4 +127,66 @@ export function getEquipmentByCategory(era: Era): Record<string, EquipmentItem[]
     grouped[item.category].push(item)
   }
   return grouped
+}
+
+// === Housing auto-display based on Credit Rating ===
+// Based on Call of Cthulhu 7e Investigator Handbook wealth table
+
+export interface HousingInfo {
+  label: string
+  description: string
+}
+
+const HOUSING_BRACKETS: { min: number; max: number; housing: HousingInfo[] }[] = [
+  {
+    min: 0, max: 0,
+    housing: [
+      { label: 'Bezdomny', description: 'Śpi na ulicy, w schronisku lub w opuszczonych budynkach' },
+    ],
+  },
+  {
+    min: 1, max: 9,
+    housing: [
+      { label: 'Pokój u rodziny lub znajomych (użyczany)', description: 'Bezpłatne zakwaterowanie z łaski bliskich' },
+      { label: 'Pokój w noclegowni / schronisku', description: 'Najbardziej podstawowe schronienie' },
+    ],
+  },
+  {
+    min: 10, max: 49,
+    housing: [
+      { label: 'Pokój w pensjonacie (wynajmowany)', description: 'Prosty pokój z posiłkami, ~20 $/mies.' },
+      { label: 'Kawalerka (wynajmowana)', description: 'Skromne, ale własne lokum, ~30 $/mies.' },
+      { label: 'Mieszkanie 2-pokojowe (wynajmowane)', description: 'Wygodne mieszkanie, ~50 $/mies.' },
+    ],
+  },
+  {
+    min: 50, max: 89,
+    housing: [
+      { label: 'Mieszkanie 2–3-pokojowe (wynajmowane)', description: 'Wygodne mieszkanie w dobrej dzielnicy' },
+      { label: 'Dom podmiejski (własność)', description: 'Skromny dom na przedmieściach, ok. 5 000 $' },
+    ],
+  },
+  {
+    min: 90, max: 98,
+    housing: [
+      { label: 'Dom w prestiżowej dzielnicy (własność)', description: 'Okazały dom z ogrodem i garażem' },
+      { label: 'Apartament luksusowy', description: 'Ekskluzywny apartament w centrum miasta' },
+    ],
+  },
+  {
+    min: 99, max: 99,
+    housing: [
+      { label: 'Rezydencja / posiadłość (własność)', description: 'Imponująca rezydencja ze służbą' },
+      { label: 'Wiele nieruchomości', description: 'Posiadłości w różnych lokalizacjach' },
+    ],
+  },
+]
+
+export function getHousingForCreditRating(creditRating: number): HousingInfo[] {
+  for (const bracket of HOUSING_BRACKETS) {
+    if (creditRating >= bracket.min && creditRating <= bracket.max) {
+      return bracket.housing
+    }
+  }
+  return HOUSING_BRACKETS[0].housing
 }

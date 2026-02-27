@@ -6,7 +6,7 @@ export const inviteCodeSchema = z.object({
 
 export const basicInfoSchema = z.object({
   name: z.string().min(1, 'Imię i nazwisko jest wymagane.').max(100),
-  gender: z.string().min(1, 'Płeć jest wymagana.'),
+  gender: z.enum(['M', 'F'], { message: 'Płeć jest wymagana.' }),
   appearance: z.string().max(500).optional(),
 })
 

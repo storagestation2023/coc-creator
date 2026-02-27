@@ -1,4 +1,4 @@
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument, type PDFPage } from 'pdf-lib'
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
 import { OCCUPATIONS } from '@/data/occupations'
 import { getSkillById } from '@/data/skills'
@@ -27,6 +27,17 @@ interface ExportCharacter {
   method: string
 }
 
+/** Sanitize Polish characters for pdf-lib (limited unicode support). */
+function sanitize(text: string): string {
+  const map: Record<string, string> = {
+    'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
+    'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
+    'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N',
+    'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z',
+  }
+  return text.replace(/[^\x00-\x7F]/g, (c) => map[c] ?? c)
+}
+
 /**
  * Generate a PDF character sheet.
  * Attempts to fill a template PDF if available, otherwise creates a simple text-based PDF.
@@ -40,7 +51,8 @@ export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8
   let usedTemplate = false
 
   try {
-    const templateResponse = await fetch('/coc-sheet-template.pdf')
+    const basePath = import.meta.env.BASE_URL ?? '/'
+    const templateResponse = await fetch(`${basePath}coc-sheet-template.pdf`)
     if (templateResponse.ok) {
       const templateBytes = await templateResponse.arrayBuffer()
       pdfDoc = await PDFDocument.load(templateBytes)
@@ -49,7 +61,6 @@ export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8
       // Try to fill form fields
       const form = pdfDoc.getForm()
       try {
-        // Common field names (will vary by template)
         const trySetField = (name: string, value: string) => {
           try { form.getTextField(name).setText(value) } catch { /* field not found */ }
         }
@@ -90,19 +101,25 @@ export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8
 
   // If no template, add text pages
   if (!usedTemplate) {
-    const page = pdfDoc.addPage([595, 842]) // A4
-    const { height } = page.getSize()
-    let y = height - 50
+    let currentPage: PDFPage = pdfDoc.addPage([595, 842]) // A4
+    let y = currentPage.getSize().height - 50
+
+    const ensureSpace = (needed: number) => {
+      if (y < needed) {
+        currentPage = pdfDoc.addPage([595, 842])
+        y = currentPage.getSize().height - 50
+      }
+    }
 
     const drawText = (text: string, x: number, yPos: number, size: number = 10) => {
-      page.drawText(text, { x, y: yPos, size })
+      currentPage.drawText(sanitize(text), { x, y: yPos, size })
     }
 
     drawText('KARTA BADACZA - Zew Cthulhu 7e', 50, y, 16)
     y -= 30
 
     drawText(`Imie: ${char.name}`, 50, y)
-    drawText(`Wiek: ${char.age}   Plec: ${char.gender}`, 350, y)
+    drawText(`Wiek: ${char.age}   Plec: ${char.gender === 'M' ? 'Mezczyzna' : char.gender === 'F' ? 'Kobieta' : char.gender}`, 350, y)
     y -= 15
     drawText(`Zawod: ${occupation?.name ?? char.occupation_id}`, 50, y)
     y -= 25
@@ -155,30 +172,20 @@ export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8
 
     let col = 0
     for (const [skillId, pts] of skillEntries) {
-      if (y < 50) {
-        const newPage = pdfDoc.addPage([595, 842])
-        y = newPage.getSize().height - 50
-        col = 0
-        // Draw on new page
-        newPage.drawText('UMIEJETNOSCI (cd.)', { x: 50, y, size: 12 })
+      ensureSpace(50)
+      if (y === currentPage.getSize().height - 50) {
+        drawText('UMIEJETNOSCI (cd.)', 50, y, 12)
         y -= 18
+        col = 0
       }
+
       const skill = getSkillById(skillId)
       const base = getBase(skillId)
       const total = base + pts
-      const name = (skill?.name ?? skillId).replace(/[^\x00-\x7F]/g, (c) => {
-        // Basic Polish char substitution for PDF (pdf-lib has limited unicode)
-        const map: Record<string, string> = {
-          'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
-          'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
-          'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N',
-          'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z',
-        }
-        return map[c] ?? c
-      })
+      const name = skill?.name ?? skillId
 
       const x = col === 0 ? 50 : 310
-      page.drawText(`${name}: ${total}%`, { x, y, size: 9 })
+      drawText(`${name}: ${total}%`, x, y, 9)
 
       if (col === 1) {
         y -= 13
@@ -189,26 +196,56 @@ export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8
     }
     if (col === 1) y -= 13
 
-    // Equipment on a new page if needed
-    if (char.equipment.length > 0) {
-      if (y < 100) {
-        const newPage = pdfDoc.addPage([595, 842])
-        y = newPage.getSize().height - 50
-      }
+    // Backstory
+    const backstoryLabels: Record<string, string> = {
+      ideology: 'Ideologia / Przekonania',
+      significant_people_who: 'Wazne osoby - Kto',
+      significant_people_why: 'Wazne osoby - Dlaczego',
+      meaningful_locations: 'Znaczace miejsca',
+      treasured_possessions: 'Rzeczy osobiste',
+      traits: 'Przymioty',
+      appearance_description: 'Opis postaci',
+      key_connection: 'Kluczowa wiez',
+    }
+
+    const backstoryEntries = Object.entries(char.backstory).filter(([, v]) => v)
+    if (backstoryEntries.length > 0) {
       y -= 10
+      ensureSpace(80)
+      drawText('HISTORIA POSTACI', 50, y, 12)
+      y -= 18
+      for (const [key, value] of backstoryEntries) {
+        ensureSpace(50)
+        drawText(`${backstoryLabels[key] ?? key}:`, 50, y, 9)
+        y -= 13
+        // Wrap long text (rough 80 char per line)
+        const lines = value.match(/.{1,80}/g) ?? [value]
+        for (const line of lines) {
+          ensureSpace(30)
+          drawText(`  ${line}`, 60, y, 8)
+          y -= 11
+        }
+        y -= 4
+      }
+    }
+
+    // Equipment
+    if (char.equipment.length > 0) {
+      y -= 10
+      ensureSpace(80)
       drawText('EKWIPUNEK', 50, y, 12)
       y -= 18
-      if (char.cash) { drawText(`Gotowka: ${char.cash}  Majatek: ${char.assets}`, 50, y); y -= 14 }
+      if (char.cash) {
+        drawText(`Gotowka: ${char.cash}  Majatek: ${char.assets}`, 50, y)
+        y -= 14
+      }
+      if (char.spending_level) {
+        drawText(`Poziom zycia: ${char.spending_level}`, 50, y)
+        y -= 14
+      }
       for (const item of char.equipment) {
-        if (y < 50) break
-        const safeItem = item.replace(/[^\x00-\x7F]/g, (c) => {
-          const map: Record<string, string> = {
-            'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
-            'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
-          }
-          return map[c] ?? c
-        })
-        drawText(`- ${safeItem}`, 60, y, 9)
+        ensureSpace(30)
+        drawText(`- ${item}`, 60, y, 9)
         y -= 13
       }
     }
