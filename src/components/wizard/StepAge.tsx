@@ -1,11 +1,14 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Dices } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
-import { isYoungCharacter } from '@/data/ageRanges'
+import { isYoungCharacter, getAgeRange } from '@/data/ageRanges'
+import { CHARACTERISTIC_MAP } from '@/data/characteristics'
+import { getAgeModifications } from '@/lib/ageModifiers'
 import { rollLuck, rollLuckYoung } from '@/lib/dice'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { NumberInput } from '@/components/ui/NumberInput'
+import { Badge } from '@/components/ui/Badge'
 
 export function StepAge() {
   const store = useCharacterStore()
@@ -15,6 +18,8 @@ export function StepAge() {
   const [luckRolled, setLuckRolled] = useState(store.luck !== null)
 
   const young = isYoungCharacter(age)
+  const mods = useMemo(() => getAgeModifications(age), [age])
+  const ageRange = useMemo(() => getAgeRange(age), [age])
 
   const handleRollLuck = useCallback(() => {
     const value = young ? rollLuckYoung() : rollLuck()
@@ -26,7 +31,6 @@ export function StepAge() {
   const handleAgeChange = (newAge: number) => {
     setAge(newAge)
     if (luckRolled) {
-      // Re-roll luck when age category changes between young and non-young
       const wasYoung = isYoungCharacter(age)
       const isNowYoung = isYoungCharacter(newAge)
       if (wasYoung !== isNowYoung) {
@@ -59,12 +63,52 @@ export function StepAge() {
           min={15}
           max={89}
         />
-        {young && (
-          <p className="text-xs text-coc-accent-light mt-1">
-            Młody Badacz (15–19): Szczęście losowane z dwóch rzutów (lepszy wynik).
-          </p>
-        )}
       </div>
+
+      {/* Age effects preview */}
+      {mods && ageRange && (
+        <div className="bg-coc-surface-light border border-coc-border rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Badge>{ageRange.label}</Badge>
+          </div>
+          <ul className="text-sm text-coc-text-muted space-y-1">
+            {mods.eduImprovementChecks > 0 && (
+              <li>
+                Rzuty na poprawę WYK: <span className="text-coc-accent-light font-medium">{mods.eduImprovementChecks}</span>
+              </li>
+            )}
+            {mods.physicalDeductionTotal > 0 && (
+              <li>
+                Odliczenia fizyczne: <span className="text-coc-warning font-medium">−{mods.physicalDeductionTotal} pkt</span>
+                {' '}z {mods.deductibleStats.map((s) => CHARACTERISTIC_MAP[s].abbreviation).join(', ')}
+              </li>
+            )}
+            {mods.appReduction > 0 && (
+              <li>
+                Wygląd: <span className="text-coc-warning font-medium">−{mods.appReduction} WYG</span>
+              </li>
+            )}
+            {mods.moveReduction > 0 && (
+              <li>
+                Ruch: <span className="text-coc-warning font-medium">−{mods.moveReduction}</span>
+              </li>
+            )}
+            {mods.isYoung && (
+              <>
+                <li>
+                  Wykształcenie: <span className="text-coc-warning font-medium">−5 WYK</span>
+                </li>
+                <li>
+                  Szczęście: <span className="text-coc-accent-light font-medium">2 rzuty, lepszy wynik</span>
+                </li>
+              </>
+            )}
+            {!mods.isYoung && mods.physicalDeductionTotal === 0 && mods.eduImprovementChecks <= 1 && (
+              <li className="text-coc-accent-light">Brak kar wiekowych.</li>
+            )}
+          </ul>
+        </div>
+      )}
 
       {/* Luck */}
       <div className="border-t border-coc-border pt-4 mb-4">

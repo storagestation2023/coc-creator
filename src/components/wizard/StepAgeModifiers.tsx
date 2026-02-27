@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Trash2, Loader2 } from 'lucide-react'
+import { Trash2, Loader2, Minus, Plus } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { getAgeModifications, validateDeductions } from '@/lib/ageModifiers'
 import { eduImprovementRoll } from '@/lib/dice'
@@ -9,7 +9,6 @@ import type { CharacteristicKey } from '@/types/common'
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { NumberInput } from '@/components/ui/NumberInput'
 import { Badge } from '@/components/ui/Badge'
 
 export function StepAgeModifiers() {
@@ -162,19 +161,51 @@ export function StepAgeModifiers() {
           </p>
 
           <div className="grid grid-cols-3 gap-4">
-            {mods.deductibleStats.map((key) => (
-              <div key={key}>
-                <div className="text-sm mb-1">
-                  {CHARACTERISTIC_MAP[key].abbreviation} ({chars[key]})
+            {mods.deductibleStats.map((key) => {
+              const base = chars[key]
+              const ded = deductions[key] ?? 0
+              const result = base - ded
+              const canDeductMore = ded < Math.min(mods.physicalDeductionTotal, base - 1)
+              const canRestore = ded > 0
+              return (
+                <div key={key} className="space-y-1">
+                  <div className="text-sm font-medium">
+                    {CHARACTERISTIC_MAP[key].abbreviation}
+                    <span className="text-coc-text-muted text-xs ml-1">({base})</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setDeduction(key, ded + 1)}
+                      disabled={!canDeductMore}
+                      className="p-1.5 rounded bg-coc-surface-light border border-coc-border hover:bg-coc-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      title="Odejmij punkt"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className={`w-12 text-center py-1.5 text-sm font-mono font-bold rounded border ${
+                      ded > 0
+                        ? 'text-coc-warning border-coc-warning/30 bg-coc-warning/10'
+                        : 'text-coc-text border-coc-border bg-coc-surface-light'
+                    }`}>
+                      {result}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setDeduction(key, ded - 1)}
+                      disabled={!canRestore}
+                      className="p-1.5 rounded bg-coc-surface-light border border-coc-border hover:bg-coc-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      title="Przywróć punkt"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {ded > 0 && (
+                    <div className="text-xs text-coc-warning">−{ded}</div>
+                  )}
                 </div>
-                <NumberInput
-                  value={deductions[key] ?? 0}
-                  onChange={(v) => setDeduction(key, v)}
-                  min={0}
-                  max={Math.min(mods.physicalDeductionTotal, chars[key] - 1)}
-                />
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <p className={`text-sm mt-2 ${deductionValid ? 'text-coc-accent-light' : 'text-coc-warning'}`}>

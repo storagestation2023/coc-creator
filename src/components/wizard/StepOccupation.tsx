@@ -99,21 +99,34 @@ export function StepOccupation() {
         {occ.description && (
           <div className="text-xs text-coc-text-muted truncate">{occ.description}</div>
         )}
+        <div className="text-xs text-coc-text-muted/70 truncate mt-0.5">
+          {occ.skills.map((sid) => {
+            if (sid === 'any') return 'Dowolna'
+            if (sid === 'any_academic') return 'Dowolna (akad.)'
+            const skill = getSkillById(sid)
+            return skill?.name ?? sid
+          }).join(', ')}
+        </div>
       </button>
     )
   }
 
   return (
     <Card title="Zawód">
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-coc-text-muted" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Szukaj zawodu lub umiejętności..."
-          className="w-full pl-10 pr-4 py-2 bg-coc-surface-light border border-coc-border rounded-lg text-coc-text placeholder:text-coc-text-muted/50 focus:outline-none focus:border-coc-accent-light transition-colors"
-        />
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-coc-text-muted" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Szukaj zawodu lub umiejętności..."
+            className="w-full pl-10 pr-4 py-2 bg-coc-surface-light border border-coc-border rounded-lg text-coc-text placeholder:text-coc-text-muted/50 focus:outline-none focus:border-coc-accent-light transition-colors"
+          />
+        </div>
+        <p className="text-xs text-coc-text-muted mt-1">
+          Wyszukuj po nazwie zawodu lub dostępnych umiejętnościach.
+        </p>
       </div>
 
       <div className="max-h-[350px] overflow-y-auto space-y-1 mb-4 pr-1">
