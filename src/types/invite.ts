@@ -10,5 +10,6 @@ export interface InviteCode {
   times_used: number
   is_active: boolean
   perks: string[]
+  max_skill_value: number
   created_at: string
 }

@@ -22,6 +22,7 @@ export function StepPersonalSkills() {
   const store = useCharacterStore()
   const chars = store.characteristics as Characteristics
   const era = store.era as Era
+  const maxSkillValue = store.maxSkillValue
   const occupation = useMemo(
     () => OCCUPATIONS.find((o) => o.id === store.occupationId) ?? null,
     [store.occupationId]
@@ -83,13 +84,15 @@ export function StepPersonalSkills() {
               const skill = getSkillById(skillId)
               if (!skill) return null
               const occPts = store.occupationSkillPoints[skillId] ?? 0
+              const base = getBaseValue(skillId, chars) + occPts
               return (
                 <SkillRow
                   key={skillId}
                   name={skill.name}
-                  baseValue={getBaseValue(skillId, chars) + occPts}
+                  baseValue={base}
                   addedPoints={pts}
                   onPointsChange={(d) => handlePointChange(skillId, d)}
+                  maxAdd={maxSkillValue - base}
                 />
               )
             })}
@@ -101,13 +104,15 @@ export function StepPersonalSkills() {
         {availableSkills.map((skill) => {
           const occPts = store.occupationSkillPoints[skill.id] ?? 0
           const persPts = personalPoints[skill.id] ?? 0
+          const base = getBaseValue(skill.id, chars) + occPts
           return (
             <SkillRow
               key={skill.id}
               name={skill.name}
-              baseValue={getBaseValue(skill.id, chars) + occPts}
+              baseValue={base}
               addedPoints={persPts}
               onPointsChange={(d) => handlePointChange(skill.id, d)}
+              maxAdd={maxSkillValue - base}
             />
           )
         })}

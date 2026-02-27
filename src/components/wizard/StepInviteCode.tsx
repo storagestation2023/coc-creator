@@ -29,6 +29,7 @@ export function StepInviteCode() {
         perks: result.perks ?? [],
         maxTries: result.max_tries,
         timesUsed: result.times_used,
+        maxSkillValue: result.max_skill_value ?? 99,
       })
     }
   }

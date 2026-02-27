@@ -24,6 +24,7 @@ export function InviteCodeManager() {
   const [newEra, setNewEra] = useState<Era>('classic_1920s')
   const [newMaxTries, setNewMaxTries] = useState(1)
   const [newPerks, setNewPerks] = useState<string[]>([])
+  const [newMaxSkillValue, setNewMaxSkillValue] = useState(99)
   const [creating, setCreating] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
@@ -70,6 +71,7 @@ export function InviteCodeManager() {
         era: newEra,
         max_tries: newMaxTries,
         perks: newPerks,
+        max_skill_value: newMaxSkillValue,
       })
       await fetchCodes()
     } catch {
@@ -140,6 +142,19 @@ export function InviteCodeManager() {
                 className="w-full px-3 py-2 bg-coc-surface-light border border-coc-border rounded-lg text-coc-text focus:outline-none focus:border-coc-accent-light"
               />
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-coc-text-muted">Maks. wartość umiejętności</label>
+            <input
+              type="number"
+              min={50}
+              max={99}
+              value={newMaxSkillValue}
+              onChange={(e) => setNewMaxSkillValue(parseInt(e.target.value) || 99)}
+              className="w-full px-3 py-2 bg-coc-surface-light border border-coc-border rounded-lg text-coc-text focus:outline-none focus:border-coc-accent-light"
+            />
+            <p className="text-xs text-coc-text-muted">Limit, do którego gracz może podnieść pojedynczą umiejętność (domyślnie 99).</p>
           </div>
 
           {/* Perks checkboxes */}
@@ -219,6 +234,9 @@ export function InviteCodeManager() {
                       {code.times_used}/{code.max_tries} użyć
                     </Badge>
                     {!code.is_active && <Badge variant="danger">Nieaktywny</Badge>}
+                    {code.max_skill_value && code.max_skill_value < 99 && (
+                      <Badge variant="warning">Maks. umiejętność: {code.max_skill_value}</Badge>
+                    )}
                     {perks.map((p) => (
                       <Badge key={p} variant="warning">{PERKS.find((pk) => pk.id === p)?.name ?? p}</Badge>
                     ))}

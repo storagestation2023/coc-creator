@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/Badge'
 
 export function StepAge() {
   const store = useCharacterStore()
+  const isLocked = store.ageLocked
 
   const [age, setAge] = useState<number>(store.age ?? 25)
   const [luck, setLuck] = useState<number | null>(store.luck)
@@ -22,13 +23,15 @@ export function StepAge() {
   const ageRange = useMemo(() => getAgeRange(age), [age])
 
   const handleRollLuck = useCallback(() => {
+    if (isLocked) return
     const value = young ? rollLuckYoung() : rollLuck()
     setLuck(value)
     setLuckRolled(true)
-  }, [young])
+  }, [young, isLocked])
 
   // When age changes, reset luck if it was already rolled (young/adult may differ)
   const handleAgeChange = (newAge: number) => {
+    if (isLocked) return
     setAge(newAge)
     if (luckRolled) {
       const wasYoung = isYoungCharacter(age)
@@ -44,24 +47,38 @@ export function StepAge() {
   const canContinue = age >= 15 && age <= 89 && luck !== null
 
   const handleNext = () => {
-    store.setAge(age)
-    store.setLuck(luck!)
+    if (!isLocked) {
+      store.setAge(age)
+      store.setLuck(luck!)
+      store.lockAge()
+    }
     store.nextStep()
   }
 
   return (
     <Card title="Wiek i Szczęście">
+      {isLocked && (
+        <div className="mb-4">
+          <p className="text-sm text-coc-accent-light">
+            Wiek i Szczęście zostały zatwierdzone i nie mogą być zmienione.
+          </p>
+        </div>
+      )}
+
       {/* Age input */}
       <div className="mb-6">
         <label className="block text-sm font-medium mb-1">Wiek badacza (15–89)</label>
-        <p className="text-xs text-coc-text-muted mb-2">
-          Wiek wpływa na modyfikatory cech w następnym kroku.
-        </p>
+        {!isLocked && (
+          <p className="text-xs text-coc-text-muted mb-2">
+            Wiek wpływa na modyfikatory cech w następnym kroku.
+          </p>
+        )}
         <NumberInput
           value={age}
           onChange={handleAgeChange}
           min={15}
           max={89}
+          disabled={isLocked}
         />
       </div>
 
@@ -119,14 +136,14 @@ export function StepAge() {
               3K6×5{young ? ' (2 rzuty, lepszy)' : ''}
             </div>
           </div>
-          {method === 'dice' ? (
+          {method === 'dice' || isLocked ? (
             <>
               <div className={`text-2xl font-bold font-mono px-4 py-2 rounded-lg border ${
                 luck ? 'border-coc-accent/30 bg-coc-accent/10' : 'border-coc-border bg-coc-surface-light'
               }`}>
                 {luck ?? '—'}
               </div>
-              {!luckRolled && (
+              {!luckRolled && !isLocked && (
                 <Button size="sm" onClick={handleRollLuck}>
                   <Dices className="w-4 h-4" />
                   Rzuć

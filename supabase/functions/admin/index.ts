@@ -60,6 +60,7 @@ Deno.serve(async (req: Request) => {
           era: body.era,
           max_tries: body.max_tries ?? 1,
           perks: body.perks ?? [],
+          max_skill_value: body.max_skill_value ?? 99,
         })
         .select()
         .single()

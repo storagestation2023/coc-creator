@@ -77,35 +77,48 @@ export function StepAgeModifiers() {
 
   const canContinue = validation.valid && (mods.eduImprovementChecks === 0 || eduRollsDone)
 
+  const isLocked = store.ageModifiersLocked
+
   const handleNext = () => {
-    // Persist EDU rolls in the store (permanent)
-    if (eduRolls.length > 0) {
-      store.setEduRolls(eduRolls, currentEdu)
-    }
-    // Save deductions and updated EDU
-    store.setAgeDeductions(deductions)
-    // Update characteristics with age modifications
-    const updatedChars = { ...chars, EDU: Math.min(99, currentEdu) }
-    // Apply deductions
-    for (const [key, amount] of Object.entries(deductions)) {
-      if (amount && amount > 0) {
-        updatedChars[key as CharacteristicKey] = Math.max(1, updatedChars[key as CharacteristicKey] - amount)
+    if (!isLocked) {
+      // Persist EDU rolls in the store (permanent)
+      if (eduRolls.length > 0) {
+        store.setEduRolls(eduRolls, currentEdu)
       }
+      // Save deductions and updated EDU
+      store.setAgeDeductions(deductions)
+      // Update characteristics with age modifications
+      const updatedChars = { ...chars, EDU: Math.min(99, currentEdu) }
+      // Apply deductions
+      for (const [key, amount] of Object.entries(deductions)) {
+        if (amount && amount > 0) {
+          updatedChars[key as CharacteristicKey] = Math.max(1, updatedChars[key as CharacteristicKey] - amount)
+        }
+      }
+      // Apply APP reduction
+      if (mods.appReduction > 0) {
+        updatedChars.APP = Math.max(1, updatedChars.APP - mods.appReduction)
+      }
+      // Young characters: EDU -5
+      if (mods.isYoung) {
+        updatedChars.EDU = Math.max(1, updatedChars.EDU - 5)
+      }
+      store.setCharacteristics(updatedChars)
+      store.lockAgeModifiers()
     }
-    // Apply APP reduction
-    if (mods.appReduction > 0) {
-      updatedChars.APP = Math.max(1, updatedChars.APP - mods.appReduction)
-    }
-    // Young characters: EDU -5
-    if (mods.isYoung) {
-      updatedChars.EDU = Math.max(1, updatedChars.EDU - 5)
-    }
-    store.setCharacteristics(updatedChars)
     store.nextStep()
   }
 
   return (
     <Card title="Modyfikatory wiekowe">
+      {isLocked && (
+        <div className="mb-4">
+          <p className="text-sm text-coc-accent-light">
+            Modyfikatory wiekowe zostały zatwierdzone i nie mogą być zmienione.
+          </p>
+        </div>
+      )}
+
       <div className="mb-4">
         <Badge>{mods.ageRange.label}</Badge>
         <p className="text-sm text-coc-text-muted mt-2">{mods.ageRange.deductionDescription}</p>
@@ -136,7 +149,7 @@ export function StepAgeModifiers() {
             </div>
           ))}
 
-          {!eduRollsDone && !hasStoredEduRolls && (
+          {!eduRollsDone && !hasStoredEduRolls && !isLocked && (
             <Button size="sm" onClick={handleEduRoll} className="mt-2">
               Rzuć na poprawę WYK
             </Button>
@@ -165,8 +178,8 @@ export function StepAgeModifiers() {
               const base = chars[key]
               const ded = deductions[key] ?? 0
               const result = base - ded
-              const canDeductMore = ded < Math.min(mods.physicalDeductionTotal, base - 1)
-              const canRestore = ded > 0
+              const canDeductMore = !isLocked && ded < Math.min(mods.physicalDeductionTotal, base - 1)
+              const canRestore = !isLocked && ded > 0
               return (
                 <div key={key} className="space-y-1">
                   <div className="text-sm font-medium">

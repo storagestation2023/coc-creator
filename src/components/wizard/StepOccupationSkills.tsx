@@ -22,6 +22,7 @@ export function StepOccupationSkills() {
   const store = useCharacterStore()
   const chars = store.characteristics as Characteristics
   const era = store.era as Era
+  const maxSkillValue = store.maxSkillValue
   const occupation = useMemo(
     () => OCCUPATIONS.find((o) => o.id === store.occupationId) ?? null,
     [store.occupationId]
@@ -156,6 +157,7 @@ export function StepOccupationSkills() {
                     baseValue={getBaseValue(chosenId, chars)}
                     addedPoints={skillPoints[chosenId] ?? 0}
                     onPointsChange={(d) => handlePointChange(chosenId, d)}
+                    maxAdd={maxSkillValue - getBaseValue(chosenId, chars)}
                   />
                 )}
               </div>
@@ -171,6 +173,7 @@ export function StepOccupationSkills() {
               baseValue={getBaseValue(sid, chars)}
               addedPoints={skillPoints[sid] ?? 0}
               onPointsChange={(d) => handlePointChange(sid, d)}
+              maxAdd={maxSkillValue - getBaseValue(sid, chars)}
             />
           )
         })}
