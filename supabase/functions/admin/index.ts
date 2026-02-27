@@ -50,13 +50,16 @@ Deno.serve(async (req: Request) => {
     // POST /codes - create a new invite code
     if (path === '/codes' && req.method === 'POST') {
       const body = await req.json()
+      const methods = body.methods ?? [body.method]
       const { data, error } = await supabase
         .from('invite_codes')
         .insert({
           code: body.code,
-          method: body.method,
+          method: methods[0],
+          methods,
           era: body.era,
           max_tries: body.max_tries ?? 1,
+          perks: body.perks ?? [],
         })
         .select()
         .single()

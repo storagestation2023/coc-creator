@@ -30,7 +30,7 @@ export async function adminGetCodes(password: string) {
 
 export async function adminCreateCode(
   password: string,
-  data: { method: string; era: string; max_tries: number; code: string }
+  data: { methods: string[]; era: string; max_tries: number; code: string; perks: string[] }
 ) {
   const res = await adminFetch('/codes', password, {
     method: 'POST',

@@ -10,8 +10,10 @@ export interface WizardState {
   // Invite code data
   inviteCodeId: string | null
   inviteCode: string | null
+  methods: CreationMethod[]
   method: CreationMethod | null
   era: Era | null
+  perks: string[]
   maxTries: number
   timesUsed: number
 
@@ -27,6 +29,8 @@ export interface WizardState {
 
   // Step 3 lock: characteristics + luck are locked after proceeding
   characteristicsLocked: boolean
+  // Swap characteristics perk
+  characteristicSwap: { from: CharacteristicKey; to: CharacteristicKey } | null
 
   // Step 4: Age deductions (player distributes deduction points)
   ageDeductions: Partial<Record<CharacteristicKey, number>>
@@ -58,7 +62,8 @@ export interface WizardState {
   setStep: (step: number) => void
   nextStep: () => void
   prevStep: () => void
-  setInviteCode: (data: { id: string; code: string; method: CreationMethod; era: Era; maxTries: number; timesUsed: number }) => void
+  setInviteCode: (data: { id: string; code: string; methods: CreationMethod[]; method: CreationMethod | null; era: Era; perks: string[]; maxTries: number; timesUsed: number }) => void
+  setMethod: (method: CreationMethod) => void
   setBasicInfo: (data: { name: string; age: number; gender: string; appearance: string }) => void
   setCharacteristics: (chars: Partial<Characteristics>) => void
   setLuck: (luck: number) => void
@@ -82,8 +87,10 @@ const initialState = {
   currentStep: 0,
   inviteCodeId: null,
   inviteCode: null,
+  methods: [],
   method: null,
   era: null,
+  perks: [],
   maxTries: 1,
   timesUsed: 0,
   name: '',
@@ -93,6 +100,7 @@ const initialState = {
   characteristics: {},
   luck: null,
   characteristicsLocked: false,
+  characteristicSwap: null,
   ageDeductions: {},
   eduRolls: [],
   eduAfterRolls: null,
@@ -121,11 +129,15 @@ export const useCharacterStore = create<WizardState>()(
         set({
           inviteCodeId: data.id,
           inviteCode: data.code,
+          methods: data.methods,
           method: data.method,
           era: data.era,
+          perks: data.perks,
           maxTries: data.maxTries,
           timesUsed: data.timesUsed,
         }),
+
+      setMethod: (method) => set({ method }),
 
       setBasicInfo: (data) =>
         set({
@@ -158,8 +170,10 @@ export const useCharacterStore = create<WizardState>()(
           currentStep: 1,
           inviteCodeId: s.inviteCodeId,
           inviteCode: s.inviteCode,
+          methods: s.methods,
           method: s.method,
           era: s.era,
+          perks: s.perks,
           maxTries: s.maxTries,
           timesUsed: s.timesUsed + 1,
           // Reset all character data
@@ -170,6 +184,7 @@ export const useCharacterStore = create<WizardState>()(
           characteristics: {},
           luck: null,
           characteristicsLocked: false,
+          characteristicSwap: null,
           ageDeductions: {},
           eduRolls: [],
           eduAfterRolls: null,

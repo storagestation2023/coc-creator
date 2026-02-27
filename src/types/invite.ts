@@ -4,9 +4,11 @@ export interface InviteCode {
   id: string
   code: string
   method: CreationMethod
+  methods: CreationMethod[]
   era: Era
   max_tries: number
   times_used: number
   is_active: boolean
+  perks: string[]
   created_at: string
 }

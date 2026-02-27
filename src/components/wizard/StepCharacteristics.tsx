@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Dices, Trash2, Loader2 } from 'lucide-react'
+import { Dices, Trash2, Loader2, ArrowLeftRight } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { CHARACTERISTICS, CHARACTERISTIC_MAP, POINT_BUY_TOTAL, POINT_BUY_MIN, POINT_BUY_MAX } from '@/data/characteristics'
 import { rollCharacteristic, rollLuck, rollLuckYoung } from '@/lib/dice'
@@ -16,11 +16,17 @@ export function StepCharacteristics() {
   const method = store.method!
   const age = store.age ?? 25
   const isLocked = store.characteristicsLocked
+  const hasSwapPerk = store.perks.includes('swap_characteristics')
 
   const [chars, setChars] = useState<Partial<Characteristics>>(store.characteristics)
   const [luck, setLuck] = useState<number | null>(store.luck)
   const [rolled, setRolled] = useState(Object.keys(store.characteristics).length > 0)
   const [abandoning, setAbandoning] = useState(false)
+
+  // Swap state
+  const [swapFrom, setSwapFrom] = useState<CharacteristicKey | ''>(store.characteristicSwap?.from ?? '')
+  const [swapTo, setSwapTo] = useState<CharacteristicKey | ''>(store.characteristicSwap?.to ?? '')
+  const [swapDone, setSwapDone] = useState(store.characteristicSwap !== null)
 
   const remainingTries = store.maxTries - store.timesUsed - 1
   const canAbandon = remainingTries > 0
@@ -40,6 +46,19 @@ export function StepCharacteristics() {
     setLuck(isYoungCharacter(age) ? rollLuckYoung() : rollLuck())
     setRolled(true)
   }, [age, isLocked])
+
+  const handleSwap = () => {
+    if (!swapFrom || !swapTo || swapFrom === swapTo || swapDone) return
+    const valA = chars[swapFrom]
+    const valB = chars[swapTo]
+    if (valA === undefined || valB === undefined) return
+    setChars((prev) => ({
+      ...prev,
+      [swapFrom]: valB,
+      [swapTo]: valA,
+    }))
+    setSwapDone(true)
+  }
 
   const handleAbandon = async () => {
     if (!canAbandon || !store.inviteCodeId) return
@@ -93,7 +112,7 @@ export function StepCharacteristics() {
         </div>
       )}
 
-      {method === 'point_buy' && (
+      {method === 'point_buy' && !isLocked && (
         <div className="mb-4">
           <p className="text-sm text-coc-text-muted mb-1">
             Rozdziel {POINT_BUY_TOTAL} punktów pomiędzy cechy. Każda cecha: {POINT_BUY_MIN}–{POINT_BUY_MAX}.
@@ -104,7 +123,7 @@ export function StepCharacteristics() {
         </div>
       )}
 
-      {method === 'direct' && (
+      {method === 'direct' && !isLocked && (
         <p className="text-sm text-coc-text-muted mb-4">
           Wprowadź wartości cech (1–99).
         </p>
@@ -164,6 +183,65 @@ export function StepCharacteristics() {
           )}
         </div>
       </div>
+
+      {/* Swap characteristics perk */}
+      {hasSwapPerk && allFilled && (
+        <div className="border-t border-coc-border pt-4 mb-4">
+          <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+            <ArrowLeftRight className="w-4 h-4 text-coc-accent-light" />
+            Zamiana cech
+          </h4>
+          {swapDone ? (
+            <p className="text-sm text-coc-accent-light">
+              Zamieniono: {CHARACTERISTIC_MAP[swapFrom as CharacteristicKey]?.abbreviation} ↔ {CHARACTERISTIC_MAP[swapTo as CharacteristicKey]?.abbreviation}
+            </p>
+          ) : (
+            <div className="flex flex-wrap items-end gap-3">
+              <div>
+                <label className="block text-xs text-coc-text-muted mb-1">Cecha A</label>
+                <select
+                  value={swapFrom}
+                  onChange={(e) => setSwapFrom(e.target.value as CharacteristicKey)}
+                  className="px-3 py-2 bg-coc-surface-light border border-coc-border rounded-lg text-coc-text text-sm focus:outline-none focus:border-coc-accent-light"
+                >
+                  <option value="">Wybierz...</option>
+                  {CHARACTERISTICS.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {CHARACTERISTIC_MAP[c.key].abbreviation} ({chars[c.key]})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <ArrowLeftRight className="w-4 h-4 text-coc-text-muted mb-2" />
+              <div>
+                <label className="block text-xs text-coc-text-muted mb-1">Cecha B</label>
+                <select
+                  value={swapTo}
+                  onChange={(e) => setSwapTo(e.target.value as CharacteristicKey)}
+                  className="px-3 py-2 bg-coc-surface-light border border-coc-border rounded-lg text-coc-text text-sm focus:outline-none focus:border-coc-accent-light"
+                >
+                  <option value="">Wybierz...</option>
+                  {CHARACTERISTICS.filter((c) => c.key !== swapFrom).map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {CHARACTERISTIC_MAP[c.key].abbreviation} ({chars[c.key]})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleSwap}
+                disabled={!swapFrom || !swapTo || swapFrom === swapTo}
+              >
+                Zamień
+              </Button>
+            </div>
+          )}
+          <p className="text-xs text-coc-text-muted mt-1">
+            Możesz zamienić jedną parę cech miejscami (jednorazowo).
+          </p>
+        </div>
+      )}
 
       {/* Abandon character button */}
       {rolled && (
