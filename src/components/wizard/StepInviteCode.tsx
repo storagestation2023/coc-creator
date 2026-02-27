@@ -20,6 +20,8 @@ export function StepInviteCode() {
         code: result.code,
         method: result.method,
         era: result.era,
+        maxTries: result.max_tries,
+        timesUsed: result.times_used,
       })
     }
   }

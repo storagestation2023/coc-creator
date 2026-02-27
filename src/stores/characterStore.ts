@@ -12,6 +12,8 @@ export interface WizardState {
   inviteCode: string | null
   method: CreationMethod | null
   era: Era | null
+  maxTries: number
+  timesUsed: number
 
   // Step 2: Basic info
   name: string
@@ -23,8 +25,14 @@ export interface WizardState {
   characteristics: Partial<Characteristics>
   luck: number | null
 
+  // Step 3 lock: characteristics + luck are locked after proceeding
+  characteristicsLocked: boolean
+
   // Step 4: Age deductions (player distributes deduction points)
   ageDeductions: Partial<Record<CharacteristicKey, number>>
+  // EDU improvement rolls are permanent once rolled
+  eduRolls: { roll: number; improved: boolean; newEdu: number }[]
+  eduAfterRolls: number | null
 
   // Step 5: Derived (auto-calculated, stored for convenience)
   derived: DerivedAttributes | null
@@ -50,11 +58,13 @@ export interface WizardState {
   setStep: (step: number) => void
   nextStep: () => void
   prevStep: () => void
-  setInviteCode: (data: { id: string; code: string; method: CreationMethod; era: Era }) => void
+  setInviteCode: (data: { id: string; code: string; method: CreationMethod; era: Era; maxTries: number; timesUsed: number }) => void
   setBasicInfo: (data: { name: string; age: number; gender: string; appearance: string }) => void
   setCharacteristics: (chars: Partial<Characteristics>) => void
   setLuck: (luck: number) => void
   setAgeDeductions: (deductions: Partial<Record<CharacteristicKey, number>>) => void
+  lockCharacteristics: () => void
+  setEduRolls: (rolls: { roll: number; improved: boolean; newEdu: number }[], eduAfter: number) => void
   setDerived: (derived: DerivedAttributes) => void
   setOccupation: (id: string) => void
   setOccupationSkillPoints: (points: Record<string, number>) => void
@@ -63,6 +73,8 @@ export interface WizardState {
   setEquipment: (equipment: string[]) => void
   setCustomItems: (items: string[]) => void
   setWealth: (data: { cash: string; assets: string; spendingLevel: string }) => void
+  /** Abandon current character, increment timesUsed, reset character data, go to step 1 */
+  abandonCharacter: () => void
   reset: () => void
 }
 
@@ -72,13 +84,18 @@ const initialState = {
   inviteCode: null,
   method: null,
   era: null,
+  maxTries: 1,
+  timesUsed: 0,
   name: '',
   age: null,
   gender: '',
   appearance: '',
   characteristics: {},
   luck: null,
+  characteristicsLocked: false,
   ageDeductions: {},
+  eduRolls: [],
+  eduAfterRolls: null,
   derived: null,
   occupationId: null,
   occupationSkillPoints: {},
@@ -106,6 +123,8 @@ export const useCharacterStore = create<WizardState>()(
           inviteCode: data.code,
           method: data.method,
           era: data.era,
+          maxTries: data.maxTries,
+          timesUsed: data.timesUsed,
         }),
 
       setBasicInfo: (data) =>
@@ -119,6 +138,8 @@ export const useCharacterStore = create<WizardState>()(
       setCharacteristics: (chars) => set({ characteristics: chars }),
       setLuck: (luck) => set({ luck }),
       setAgeDeductions: (deductions) => set({ ageDeductions: deductions }),
+      lockCharacteristics: () => set({ characteristicsLocked: true }),
+      setEduRolls: (rolls, eduAfter) => set({ eduRolls: rolls, eduAfterRolls: eduAfter }),
       setDerived: (derived) => set({ derived }),
       setOccupation: (id) =>
         set({ occupationId: id, occupationSkillPoints: {}, personalSkillPoints: {} }),
@@ -130,6 +151,39 @@ export const useCharacterStore = create<WizardState>()(
       setCustomItems: (items) => set({ customItems: items }),
       setWealth: (data) =>
         set({ cash: data.cash, assets: data.assets, spendingLevel: data.spendingLevel }),
+
+      abandonCharacter: () =>
+        set((s) => ({
+          // Keep invite code data, increment timesUsed
+          currentStep: 1,
+          inviteCodeId: s.inviteCodeId,
+          inviteCode: s.inviteCode,
+          method: s.method,
+          era: s.era,
+          maxTries: s.maxTries,
+          timesUsed: s.timesUsed + 1,
+          // Reset all character data
+          name: '',
+          age: null,
+          gender: '',
+          appearance: '',
+          characteristics: {},
+          luck: null,
+          characteristicsLocked: false,
+          ageDeductions: {},
+          eduRolls: [],
+          eduAfterRolls: null,
+          derived: null,
+          occupationId: null,
+          occupationSkillPoints: {},
+          personalSkillPoints: {},
+          backstory: {},
+          equipment: [],
+          customItems: [],
+          cash: '',
+          assets: '',
+          spendingLevel: '',
+        })),
 
       reset: () => set(initialState),
     }),

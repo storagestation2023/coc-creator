@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
+import { Trash2, Loader2 } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { getAgeModifications, validateDeductions } from '@/lib/ageModifiers'
 import { eduImprovementRoll } from '@/lib/dice'
+import { supabase } from '@/lib/supabase'
 import type { Characteristics } from '@/types/character'
 import type { CharacteristicKey } from '@/types/common'
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
@@ -16,9 +18,19 @@ export function StepAgeModifiers() {
   const chars = store.characteristics as Characteristics
   const mods = useMemo(() => getAgeModifications(age), [age])
 
+  // Persist EDU rolls: if the store already has rolls, they're locked
+  const hasStoredEduRolls = store.eduRolls.length > 0
   const [deductions, setDeductions] = useState<Partial<Record<CharacteristicKey, number>>>(store.ageDeductions)
-  const [eduRolls, setEduRolls] = useState<{ roll: number; improved: boolean; newEdu: number }[]>([])
-  const [currentEdu, setCurrentEdu] = useState(chars.EDU)
+  const [eduRolls, setEduRolls] = useState<{ roll: number; improved: boolean; newEdu: number }[]>(
+    hasStoredEduRolls ? store.eduRolls : []
+  )
+  const [currentEdu, setCurrentEdu] = useState(
+    store.eduAfterRolls ?? chars.EDU
+  )
+  const [abandoning, setAbandoning] = useState(false)
+
+  const remainingTries = store.maxTries - store.timesUsed - 1
+  const canAbandon = remainingTries > 0
 
   if (!mods) {
     return (
@@ -32,10 +44,23 @@ export function StepAgeModifiers() {
   const noModifiers = mods.physicalDeductionTotal === 0 && mods.eduImprovementChecks <= 1 && !mods.isYoung
 
   const handleEduRoll = () => {
+    if (hasStoredEduRolls) return // Can't re-roll if already persisted
     const result = eduImprovementRoll(currentEdu)
-    setEduRolls((prev) => [...prev, result])
+    const newRolls = [...eduRolls, result]
+    setEduRolls(newRolls)
     if (result.improved) {
       setCurrentEdu(result.newEdu)
+    }
+  }
+
+  const handleAbandon = async () => {
+    if (!canAbandon || !store.inviteCodeId) return
+    setAbandoning(true)
+    try {
+      await supabase.rpc('increment_times_used', { code_id: store.inviteCodeId })
+      store.abandonCharacter()
+    } catch {
+      setAbandoning(false)
     }
   }
 
@@ -54,6 +79,10 @@ export function StepAgeModifiers() {
   const canContinue = validation.valid && (mods.eduImprovementChecks === 0 || eduRollsDone)
 
   const handleNext = () => {
+    // Persist EDU rolls in the store (permanent)
+    if (eduRolls.length > 0) {
+      store.setEduRolls(eduRolls, currentEdu)
+    }
     // Save deductions and updated EDU
     store.setAgeDeductions(deductions)
     // Update characteristics with age modifications
@@ -97,6 +126,9 @@ export function StepAgeModifiers() {
           </h4>
           <p className="text-xs text-coc-text-muted mb-3">
             Rzuć 1K100. Jeśli wynik &gt; aktualnego WYK ({currentEdu}), dodaj 1K10 do WYK.
+            {hasStoredEduRolls && (
+              <span className="text-coc-accent-light ml-1">Rzuty zostały już wykonane i nie można ich cofnąć.</span>
+            )}
           </p>
 
           {eduRolls.map((r, i) => (
@@ -105,7 +137,7 @@ export function StepAgeModifiers() {
             </div>
           ))}
 
-          {!eduRollsDone && (
+          {!eduRollsDone && !hasStoredEduRolls && (
             <Button size="sm" onClick={handleEduRoll} className="mt-2">
               Rzuć na poprawę WYK
             </Button>
@@ -179,6 +211,28 @@ export function StepAgeModifiers() {
           </p>
         </div>
       )}
+
+      {/* Abandon character button */}
+      <div className="border-t border-coc-border pt-4 mb-4">
+        <Button
+          variant="ghost"
+          onClick={handleAbandon}
+          disabled={!canAbandon || abandoning}
+          className="text-coc-danger hover:text-coc-danger"
+        >
+          {abandoning ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Trash2 className="w-4 h-4" />
+          )}
+          Porzuć postać i zrób nową
+        </Button>
+        <p className="text-xs text-coc-text-muted mt-1">
+          {canAbandon
+            ? `Zostało Ci ${remainingTries} ${remainingTries === 1 ? 'podejście' : remainingTries < 5 ? 'podejścia' : 'podejść'}`
+            : 'Brak pozostałych podejść — to Twoja ostatnia szansa'}
+        </p>
+      </div>
 
       <div className="flex justify-between pt-2">
         <Button variant="secondary" onClick={() => store.prevStep()}>Wstecz</Button>

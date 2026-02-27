@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react'
-import { Dices, RotateCcw } from 'lucide-react'
+import { Dices, Trash2, Loader2 } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { CHARACTERISTICS, CHARACTERISTIC_MAP, POINT_BUY_TOTAL, POINT_BUY_MIN, POINT_BUY_MAX } from '@/data/characteristics'
 import { rollCharacteristic, rollLuck, rollLuckYoung } from '@/lib/dice'
 import { isYoungCharacter } from '@/data/ageRanges'
+import { supabase } from '@/lib/supabase'
 import type { Characteristics } from '@/types/character'
 import type { CharacteristicKey } from '@/types/common'
 import { Card } from '@/components/ui/Card'
@@ -14,16 +15,23 @@ export function StepCharacteristics() {
   const store = useCharacterStore()
   const method = store.method!
   const age = store.age ?? 25
+  const isLocked = store.characteristicsLocked
 
   const [chars, setChars] = useState<Partial<Characteristics>>(store.characteristics)
   const [luck, setLuck] = useState<number | null>(store.luck)
-  const [rolled, setRolled] = useState(false)
+  const [rolled, setRolled] = useState(Object.keys(store.characteristics).length > 0)
+  const [abandoning, setAbandoning] = useState(false)
+
+  const remainingTries = store.maxTries - store.timesUsed - 1
+  const canAbandon = remainingTries > 0
 
   const setStat = useCallback((key: CharacteristicKey, value: number) => {
+    if (isLocked) return
     setChars((prev) => ({ ...prev, [key]: value }))
-  }, [])
+  }, [isLocked])
 
   const rollAll = useCallback(() => {
+    if (isLocked) return
     const newChars: Partial<Characteristics> = {}
     for (const c of CHARACTERISTICS) {
       newChars[c.key] = rollCharacteristic(c.rollFormula)
@@ -31,7 +39,18 @@ export function StepCharacteristics() {
     setChars(newChars)
     setLuck(isYoungCharacter(age) ? rollLuckYoung() : rollLuck())
     setRolled(true)
-  }, [age])
+  }, [age, isLocked])
+
+  const handleAbandon = async () => {
+    if (!canAbandon || !store.inviteCodeId) return
+    setAbandoning(true)
+    try {
+      await supabase.rpc('increment_times_used', { code_id: store.inviteCodeId })
+      store.abandonCharacter()
+    } catch {
+      setAbandoning(false)
+    }
+  }
 
   const allFilled = CHARACTERISTICS.every((c) => {
     const v = chars[c.key]
@@ -46,27 +65,31 @@ export function StepCharacteristics() {
   const handleNext = () => {
     store.setCharacteristics(chars)
     store.setLuck(luck!)
+    store.lockCharacteristics()
     store.nextStep()
   }
 
   return (
     <Card title="Cechy">
-      {method === 'dice' && (
+      {method === 'dice' && !isLocked && (
         <div className="mb-4 space-y-2">
           <p className="text-sm text-coc-text-muted">
             Rzuć kośćmi, aby wylosować wartości cech. SIŁ, KON, ZRĘ, WYG, MOC: 3K6×5. BUD, INT, WYK: (2K6+6)×5.
           </p>
-          <div className="flex gap-2">
-            <Button onClick={rollAll} variant={rolled ? 'secondary' : 'primary'}>
+          {!rolled && (
+            <Button onClick={rollAll}>
               <Dices className="w-4 h-4" />
-              {rolled ? 'Rzuć ponownie' : 'Rzuć wszystkie'}
+              Rzuć wszystkie
             </Button>
-            {rolled && (
-              <Button variant="ghost" onClick={() => { setChars({}); setLuck(null); setRolled(false) }}>
-                <RotateCcw className="w-4 h-4" /> Wyczyść
-              </Button>
-            )}
-          </div>
+          )}
+        </div>
+      )}
+
+      {method === 'dice' && isLocked && (
+        <div className="mb-4">
+          <p className="text-sm text-coc-accent-light">
+            Cechy zostały zatwierdzone i nie mogą być zmienione.
+          </p>
         </div>
       )}
 
@@ -96,7 +119,7 @@ export function StepCharacteristics() {
                 {def.abbreviation}
                 <span className="text-coc-text-muted ml-1 text-xs">({def.name})</span>
               </div>
-              {method === 'dice' ? (
+              {method === 'dice' || isLocked ? (
                 <div className={`text-2xl font-bold font-mono text-center py-2 rounded-lg border ${
                   chars[c.key] ? 'border-coc-accent/30 bg-coc-accent/10' : 'border-coc-border bg-coc-surface-light'
                 }`}>
@@ -125,7 +148,7 @@ export function StepCharacteristics() {
             <div className="text-sm font-medium">Szczęście</div>
             <div className="text-xs text-coc-text-muted">3K6×5{isYoungCharacter(age) ? ' (2 rzuty, lepszy)' : ''}</div>
           </div>
-          {method === 'dice' ? (
+          {method === 'dice' || isLocked ? (
             <div className={`text-2xl font-bold font-mono px-4 py-2 rounded-lg border ${
               luck ? 'border-coc-accent/30 bg-coc-accent/10' : 'border-coc-border bg-coc-surface-light'
             }`}>
@@ -141,6 +164,30 @@ export function StepCharacteristics() {
           )}
         </div>
       </div>
+
+      {/* Abandon character button */}
+      {rolled && (
+        <div className="border-t border-coc-border pt-4 mb-4">
+          <Button
+            variant="ghost"
+            onClick={handleAbandon}
+            disabled={!canAbandon || abandoning}
+            className="text-coc-danger hover:text-coc-danger"
+          >
+            {abandoning ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
+            Porzuć postać i zrób nową
+          </Button>
+          <p className="text-xs text-coc-text-muted mt-1">
+            {canAbandon
+              ? `Zostało Ci ${remainingTries} ${remainingTries === 1 ? 'podejście' : remainingTries < 5 ? 'podejścia' : 'podejść'}`
+              : 'Brak pozostałych podejść — to Twoja ostatnia szansa'}
+          </p>
+        </div>
+      )}
 
       <div className="flex justify-between pt-2">
         <Button variant="secondary" onClick={() => store.prevStep()}>Wstecz</Button>
