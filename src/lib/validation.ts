@@ -6,7 +6,6 @@ export const inviteCodeSchema = z.object({
 
 export const basicInfoSchema = z.object({
   name: z.string().min(1, 'Imię i nazwisko jest wymagane.').max(100),
-  age: z.number().int().min(15, 'Minimalny wiek to 15 lat.').max(89, 'Maksymalny wiek to 89 lat.'),
   gender: z.string().min(1, 'Płeć jest wymagana.'),
   appearance: z.string().max(500).optional(),
 })

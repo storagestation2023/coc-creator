@@ -64,7 +64,8 @@ export interface WizardState {
   prevStep: () => void
   setInviteCode: (data: { id: string; code: string; methods: CreationMethod[]; method: CreationMethod | null; era: Era; perks: string[]; maxTries: number; timesUsed: number }) => void
   setMethod: (method: CreationMethod) => void
-  setBasicInfo: (data: { name: string; age: number; gender: string; appearance: string }) => void
+  setAge: (age: number) => void
+  setBasicInfo: (data: { name: string; gender: string; appearance: string }) => void
   setCharacteristics: (chars: Partial<Characteristics>) => void
   setLuck: (luck: number) => void
   setAgeDeductions: (deductions: Partial<Record<CharacteristicKey, number>>) => void
@@ -138,11 +139,11 @@ export const useCharacterStore = create<WizardState>()(
         }),
 
       setMethod: (method) => set({ method }),
+      setAge: (age) => set({ age }),
 
       setBasicInfo: (data) =>
         set({
           name: data.name,
-          age: data.age,
           gender: data.gender,
           appearance: data.appearance,
         }),

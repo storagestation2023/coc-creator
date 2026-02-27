@@ -9,6 +9,7 @@ export interface Occupation {
   id: string
   name: string
   description?: string
+  category: string
   skill_formula: OccupationSkillFormula
   skills: string[]
   credit_rating: { min: number; max: number }

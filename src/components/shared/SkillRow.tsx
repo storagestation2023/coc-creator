@@ -1,4 +1,4 @@
-import { Minus, Plus } from 'lucide-react'
+import { Minus, Plus, ChevronsLeft, ChevronsRight } from 'lucide-react'
 
 interface SkillRowProps {
   name: string
@@ -24,9 +24,19 @@ export function SkillRow({ name, baseValue, addedPoints, onPointsChange, maxAdd 
         <div className="flex items-center gap-0.5">
           <button
             type="button"
+            onClick={() => onPointsChange(-5)}
+            disabled={disabled || addedPoints < 5}
+            className="p-0.5 rounded hover:bg-coc-border disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+            title="-5"
+          >
+            <ChevronsLeft className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
             onClick={() => onPointsChange(-1)}
             disabled={disabled || addedPoints <= 0}
             className="p-0.5 rounded hover:bg-coc-border disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+            title="-1"
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
@@ -40,8 +50,18 @@ export function SkillRow({ name, baseValue, addedPoints, onPointsChange, maxAdd 
             onClick={() => onPointsChange(1)}
             disabled={disabled || addedPoints >= maxAdd || total >= 99}
             className="p-0.5 rounded hover:bg-coc-border disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+            title="+1"
           >
             <Plus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onPointsChange(5)}
+            disabled={disabled || addedPoints + 5 > maxAdd || total + 5 > 99}
+            className="p-0.5 rounded hover:bg-coc-border disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+            title="+5"
+          >
+            <ChevronsRight className="w-3.5 h-3.5" />
           </button>
         </div>
 

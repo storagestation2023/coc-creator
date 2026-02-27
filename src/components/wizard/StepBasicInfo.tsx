@@ -17,14 +17,13 @@ export function StepBasicInfo() {
     resolver: zodResolver(basicInfoSchema),
     defaultValues: {
       name: store.name || '',
-      age: store.age ?? 25,
       gender: store.gender || '',
       appearance: store.appearance || '',
     },
   })
 
   const onSubmit = (data: BasicInfoFormData) => {
-    store.setBasicInfo({ ...data, appearance: data.appearance ?? '' })
+    store.setBasicInfo({ name: data.name, gender: data.gender, appearance: data.appearance ?? '' })
     store.nextStep()
   }
 
@@ -38,22 +37,12 @@ export function StepBasicInfo() {
           {...register('name')}
         />
 
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Wiek (15–89)"
-            type="number"
-            min={15}
-            max={89}
-            error={errors.age?.message}
-            {...register('age', { valueAsNumber: true })}
-          />
-          <Input
-            label="Płeć"
-            placeholder="np. Mężczyzna"
-            error={errors.gender?.message}
-            {...register('gender')}
-          />
-        </div>
+        <Input
+          label="Płeć"
+          placeholder="np. Mężczyzna"
+          error={errors.gender?.message}
+          {...register('gender')}
+        />
 
         <div className="space-y-1">
           <label className="block text-sm font-medium text-coc-text-muted">

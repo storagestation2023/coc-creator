@@ -30,6 +30,7 @@ export const PL = {
   step_invite_code: 'Kod zaproszenia',
   step_basic_info: 'Dane podstawowe',
   step_characteristics: 'Cechy',
+  step_age: 'Wiek i Szczęście',
   step_age_modifiers: 'Modyfikatory wiekowe',
   step_derived: 'Atrybuty pochodne',
   step_occupation: 'Zawód',

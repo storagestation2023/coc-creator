@@ -2,8 +2,8 @@ import { Stepper } from '@/components/ui/Stepper'
 import { useCharacterStore } from '@/stores/characterStore'
 import { PL } from '@/data/i18n'
 import { StepInviteCode } from './StepInviteCode'
-import { StepBasicInfo } from './StepBasicInfo'
 import { StepCharacteristics } from './StepCharacteristics'
+import { StepAge } from './StepAge'
 import { StepAgeModifiers } from './StepAgeModifiers'
 import { StepDerived } from './StepDerived'
 import { StepOccupation } from './StepOccupation'
@@ -11,12 +11,13 @@ import { StepOccupationSkills } from './StepOccupationSkills'
 import { StepPersonalSkills } from './StepPersonalSkills'
 import { StepBackstory } from './StepBackstory'
 import { StepEquipment } from './StepEquipment'
+import { StepBasicInfo } from './StepBasicInfo'
 import { StepReview } from './StepReview'
 
 const STEP_LABELS = [
   PL.step_invite_code,
-  PL.step_basic_info,
   PL.step_characteristics,
+  PL.step_age,
   PL.step_age_modifiers,
   PL.step_derived,
   PL.step_occupation,
@@ -24,13 +25,14 @@ const STEP_LABELS = [
   PL.step_personal_skills,
   PL.step_backstory,
   PL.step_equipment,
+  PL.step_basic_info,
   PL.step_review,
 ]
 
 const STEP_COMPONENTS = [
   StepInviteCode,
-  StepBasicInfo,
   StepCharacteristics,
+  StepAge,
   StepAgeModifiers,
   StepDerived,
   StepOccupation,
@@ -38,6 +40,7 @@ const STEP_COMPONENTS = [
   StepPersonalSkills,
   StepBackstory,
   StepEquipment,
+  StepBasicInfo,
   StepReview,
 ]
 

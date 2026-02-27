@@ -2,8 +2,7 @@ import { useState, useCallback } from 'react'
 import { Dices, Trash2, Loader2, ArrowLeftRight } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { CHARACTERISTICS, CHARACTERISTIC_MAP, POINT_BUY_TOTAL, POINT_BUY_MIN, POINT_BUY_MAX } from '@/data/characteristics'
-import { rollCharacteristic, rollLuck, rollLuckYoung } from '@/lib/dice'
-import { isYoungCharacter } from '@/data/ageRanges'
+import { rollCharacteristic } from '@/lib/dice'
 import { supabase } from '@/lib/supabase'
 import type { Characteristics } from '@/types/character'
 import type { CharacteristicKey } from '@/types/common'
@@ -14,12 +13,10 @@ import { NumberInput } from '@/components/ui/NumberInput'
 export function StepCharacteristics() {
   const store = useCharacterStore()
   const method = store.method!
-  const age = store.age ?? 25
   const isLocked = store.characteristicsLocked
   const hasSwapPerk = store.perks.includes('swap_characteristics')
 
   const [chars, setChars] = useState<Partial<Characteristics>>(store.characteristics)
-  const [luck, setLuck] = useState<number | null>(store.luck)
   const [rolled, setRolled] = useState(Object.keys(store.characteristics).length > 0)
   const [abandoning, setAbandoning] = useState(false)
 
@@ -43,9 +40,8 @@ export function StepCharacteristics() {
       newChars[c.key] = rollCharacteristic(c.rollFormula)
     }
     setChars(newChars)
-    setLuck(isYoungCharacter(age) ? rollLuckYoung() : rollLuck())
     setRolled(true)
-  }, [age, isLocked])
+  }, [isLocked])
 
   const handleSwap = () => {
     if (!swapFrom || !swapTo || swapFrom === swapTo || swapDone) return
@@ -74,7 +70,7 @@ export function StepCharacteristics() {
   const allFilled = CHARACTERISTICS.every((c) => {
     const v = chars[c.key]
     return v !== undefined && v > 0
-  }) && luck !== null
+  })
 
   const pointBuyTotal = CHARACTERISTICS.reduce((sum, c) => sum + (chars[c.key] ?? 0), 0)
   const pointBuyValid = method !== 'point_buy' || pointBuyTotal === POINT_BUY_TOTAL
@@ -83,7 +79,6 @@ export function StepCharacteristics() {
 
   const handleNext = () => {
     store.setCharacteristics(chars)
-    store.setLuck(luck!)
     store.lockCharacteristics()
     store.nextStep()
   }
@@ -158,30 +153,6 @@ export function StepCharacteristics() {
             </div>
           )
         })}
-      </div>
-
-      {/* Luck */}
-      <div className="border-t border-coc-border pt-4 mb-4">
-        <div className="flex items-center gap-4">
-          <div>
-            <div className="text-sm font-medium">Szczęście</div>
-            <div className="text-xs text-coc-text-muted">3K6×5{isYoungCharacter(age) ? ' (2 rzuty, lepszy)' : ''}</div>
-          </div>
-          {method === 'dice' || isLocked ? (
-            <div className={`text-2xl font-bold font-mono px-4 py-2 rounded-lg border ${
-              luck ? 'border-coc-accent/30 bg-coc-accent/10' : 'border-coc-border bg-coc-surface-light'
-            }`}>
-              {luck ?? '—'}
-            </div>
-          ) : (
-            <NumberInput
-              value={luck ?? 0}
-              onChange={setLuck}
-              min={1}
-              max={99}
-            />
-          )}
-        </div>
       </div>
 
       {/* Swap characteristics perk */}
