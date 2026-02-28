@@ -586,19 +586,34 @@ export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8
     const p1 = pages[0]
     const p2 = pages.length > 1 ? pages[1] : null
 
-    // DEBUG v9: calibration grid — red markers for X and Y positions
+    // DEBUG v10: full-page calibration grid
     const red = rgb(1, 0, 0)
-    // X markers at top (y=835, where v7 watermark was visible)
-    for (let x = 100; x <= 600; x += 25) {
-      p1.drawText(String(x), { x, y: 835, size: 8, font, color: red })
-      // vertical tick marks at characteristic row levels
-      p1.drawLine({ start: { x, y: 830 }, end: { x, y: 690 }, thickness: 0.3, color: red })
+    const gray = rgb(0.7, 0.7, 0.7)
+    // X labels at top
+    for (let x = 50; x <= 600; x += 50) {
+      p1.drawText(String(x), { x: x - 6, y: 848, size: 6, font, color: red })
     }
-    // Y markers on left side
-    for (let y = 830; y >= 680; y -= 10) {
-      p1.drawText(String(y), { x: 15, y, size: 7, font, color: red })
-      // horizontal tick
-      p1.drawLine({ start: { x: 40, y }, end: { x: 610, y }, thickness: 0.2, color: red })
+    // Y labels on left
+    for (let y = 50; y <= 850; y += 50) {
+      p1.drawText(String(y), { x: 2, y, size: 5, font, color: red })
+    }
+    // Vertical lines every 50pt (light gray), every 100pt (red, thicker)
+    for (let x = 50; x <= 600; x += 50) {
+      const isMain = x % 100 === 0
+      p1.drawLine({
+        start: { x, y: 10 }, end: { x, y: 845 },
+        thickness: isMain ? 0.5 : 0.2,
+        color: isMain ? red : gray,
+      })
+    }
+    // Horizontal lines every 50pt (light gray), every 100pt (red, thicker)
+    for (let y = 50; y <= 850; y += 50) {
+      const isMain = y % 100 === 0
+      p1.drawLine({
+        start: { x: 20, y }, end: { x: 610, y },
+        thickness: isMain ? 0.5 : 0.2,
+        color: isMain ? red : gray,
+      })
     }
 
     fillPersonalInfo(p1, font, char)
