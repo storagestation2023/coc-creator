@@ -69,18 +69,18 @@ const P1_INFO = {
 // Half/fifth are stacked vertically: same X (value X + ~30), Y offset ±8
 const P1_CHARS: Record<CharacteristicKey, { value: [number, number]; half: [number, number]; fifth: [number, number] }> = {
   // Row 1: S, ZR, MOC  (y≈768)
-  STR: { value: [332, 768], half: [362, 776], fifth: [362, 760] },
-  DEX: { value: [436, 768], half: [466, 776], fifth: [466, 760] },
-  POW: { value: [540, 768], half: [570, 776], fifth: [570, 760] },
+  STR: { value: [317, 768], half: [347, 776], fifth: [347, 760] },
+  DEX: { value: [421, 768], half: [451, 776], fifth: [451, 760] },
+  POW: { value: [525, 768], half: [555, 776], fifth: [555, 760] },
   // Row 2: KON, WYG, WYK  (y≈733)
-  CON: { value: [332, 733], half: [362, 741], fifth: [362, 725] },
-  APP: { value: [436, 733], half: [466, 741], fifth: [466, 725] },
-  EDU: { value: [540, 733], half: [570, 741], fifth: [570, 725] },
+  CON: { value: [317, 733], half: [347, 741], fifth: [347, 725] },
+  APP: { value: [421, 733], half: [451, 741], fifth: [451, 725] },
+  EDU: { value: [525, 733], half: [555, 741], fifth: [555, 725] },
   // Row 3: BC, INT  (y≈701)  — Ruch is separate
-  SIZ: { value: [332, 701], half: [362, 709], fifth: [362, 693] },
-  INT: { value: [436, 701], half: [466, 709], fifth: [466, 693] },
+  SIZ: { value: [317, 701], half: [347, 709], fifth: [347, 693] },
+  INT: { value: [421, 701], half: [451, 709], fifth: [451, 693] },
 }
-const P1_MOVE: [number, number] = [575, 701]
+const P1_MOVE: [number, number] = [530, 701]
 
 // --- PAGE 1: Derived stats ---
 const P1_HP_MAX: [number, number] = [130, 682]
