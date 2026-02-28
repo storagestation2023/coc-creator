@@ -52,56 +52,59 @@ function sanitize(text: string): string {
 // ============================================================
 
 // --- PAGE 1: Personal info fields ---
+// Calibrated from grid overlay on template PDF
 const P1_INFO = {
-  name:       { x: 148, y: 803 },
-  occupation: { x: 118, y: 762 },
-  age:        { x: 95,  y: 742 },
-  sex:        { x: 170, y: 742 },
+  name:       { x: 150, y: 778 },
+  occupation: { x: 115, y: 743 },
+  age:        { x: 90,  y: 728 },
+  sex:        { x: 160, y: 728 },
 } as const
 
 // --- PAGE 1: Characteristics grid ---
 // Sheet labels → our keys:
 //   S=STR, KON=CON, BC=SIZ, ZR=DEX, WYG=APP, INT=INT, MOC=POW, WYK=EDU
 // Each cell: { value, half, fifth } — coordinates are BOX CENTERS
+// Grid spans x≈288-600, 3 columns of ~104pt each
 const P1_CHARS: Record<CharacteristicKey, { value: [number, number]; half: [number, number]; fifth: [number, number] }> = {
-  // Row 1: S, ZR, MOC
-  STR: { value: [330, 792], half: [367, 792], fifth: [400, 792] },
-  DEX: { value: [436, 792], half: [471, 792], fifth: [503, 792] },
-  POW: { value: [542, 792], half: [574, 792], fifth: [601, 792] },
-  // Row 2: KON, WYG, WYK
-  CON: { value: [330, 757], half: [367, 757], fifth: [400, 757] },
-  APP: { value: [436, 757], half: [471, 757], fifth: [503, 757] },
-  EDU: { value: [542, 757], half: [574, 757], fifth: [601, 757] },
-  // Row 3: BC, INT, (Ruch is separate)
-  SIZ: { value: [330, 722], half: [367, 722], fifth: [400, 722] },
-  INT: { value: [436, 722], half: [471, 722], fifth: [503, 722] },
+  // Row 1: S, ZR, MOC  (y≈768)
+  STR: { value: [332, 768], half: [359, 768], fifth: [381, 768] },
+  DEX: { value: [436, 768], half: [463, 768], fifth: [485, 768] },
+  POW: { value: [540, 768], half: [567, 768], fifth: [589, 768] },
+  // Row 2: KON, WYG, WYK  (y≈733)
+  CON: { value: [332, 733], half: [359, 733], fifth: [381, 733] },
+  APP: { value: [436, 733], half: [463, 733], fifth: [485, 733] },
+  EDU: { value: [540, 733], half: [567, 733], fifth: [589, 733] },
+  // Row 3: BC, INT  (y≈701)  — Ruch is separate
+  SIZ: { value: [332, 701], half: [359, 701], fifth: [381, 701] },
+  INT: { value: [436, 701], half: [463, 701], fifth: [485, 701] },
 }
-const P1_MOVE: [number, number] = [555, 722]
+const P1_MOVE: [number, number] = [575, 701]
 
 // --- PAGE 1: Derived stats ---
-const P1_HP_MAX: [number, number] = [120, 685]
-const P1_SAN_START: [number, number] = [362, 685]
-const P1_SAN_MAX: [number, number] = [400, 685]
-const P1_MP_MAX: [number, number] = [582, 635]
-const P1_LUCK: [number, number] = [287, 600] // "Pech" row
+const P1_HP_MAX: [number, number] = [130, 682]
+const P1_SAN_START: [number, number] = [405, 688]
+const P1_SAN_MAX: [number, number] = [445, 688]
+const P1_MP_MAX: [number, number] = [578, 612]
+const P1_LUCK: [number, number] = [265, 578]
 
 // --- PAGE 1: Combat box (right side, bottom) ---
-const P1_DAMAGE_BONUS: [number, number] = [557, 178]
-const P1_BUILD: [number, number] = [557, 143]
-const P1_DODGE: [number, number] = [557, 108]
+const P1_DAMAGE_BONUS: [number, number] = [560, 175]
+const P1_BUILD: [number, number] = [560, 132]
+const P1_DODGE: [number, number] = [560, 88]
 
 // --- PAGE 1: Skills ---
 // Map from composite skill key → [x, y] position for the value
-const SKILL_Y0 = 510    // first row Y
-const SKILL_DY = 17.0   // row height
+// Calibrated: first row y≈508, row height ≈17.5pt
+const SKILL_Y0 = 508
+const SKILL_DY = 17.5
 const sy = (row: number) => SKILL_Y0 - row * SKILL_DY
-// Column value X positions
-const C1X = 148, C2X = 298, C3X = 448, C4X = 588
+// Column value X positions (right edge of each column)
+const C1X = 160, C2X = 330, C3X = 490, C4X = 590
 // Column label X positions (for writing names in blank rows)
-const C1L = 55, C2L = 175, C3L = 325, C4L = 475
+const C1L = 62, C2L = 235, C3L = 398, C4L = 560
 
 const P1_SKILLS: Record<string, [number, number]> = {
-  // Column 1
+  // Column 1 (16 rows, 0-15)
   'antropologia':                  [C1X, sy(0)],
   'archeologia':                   [C1X, sy(1)],
   'bron_palna:karabin_strzelba':   [C1X, sy(2)],
@@ -117,7 +120,7 @@ const P1_SKILLS: Record<string, [number, number]> = {
   // rows 12-13 = blank for language
   'jezyk_ojczysty':                [C1X, sy(14)],
   'korzystanie_z_bibliotek':       [C1X, sy(15)],
-  // Column 2
+  // Column 2 (16 rows, 0-15; Obsługa Ciężkiego Sprzętu takes 2 lines)
   'ksiegowosc':                    [C2X, sy(0)],
   'majetnosc':                     [C2X, sy(1)],
   'mechanika':                     [C2X, sy(2)],
@@ -125,14 +128,15 @@ const P1_SKILLS: Record<string, [number, number]> = {
   'mity_cthulhu':                  [C2X, sy(4)],
   'nasluchiwanie':                 [C2X, sy(5)],
   'nauka':                         [C2X, sy(6)],
-  // row 7 = blank for science spec
-  'nawigacja':                     [C2X, sy(8)],
-  'obsluga_ciezkiego_sprzetu':     [C2X, sy(9)],
-  'okultyzm':                      [C2X, sy(10)],
-  'perswazja':                     [C2X, sy(11)],
-  'pierwsza_pomoc':                [C2X, sy(12)],
-  'pilotowanie':                   [C2X, sy(13)],
-  // Column 3
+  // rows 7-8 = blank for science spec
+  'nawigacja':                     [C2X, sy(9)],
+  'obsluga_ciezkiego_sprzetu':     [C2X, sy(10)],
+  // row 11 = continuation of Obsługa label
+  'okultyzm':                      [C2X, sy(12)],
+  'perswazja':                     [C2X, sy(13)],
+  'pierwsza_pomoc':                [C2X, sy(14)],
+  'pilotowanie':                   [C2X, sy(15)],
+  // Column 3 (15 rows, 0-14)
   'plywanie':                      [C3X, sy(0)],
   'prawo':                         [C3X, sy(1)],
   'prowadzenie_samochodu':         [C3X, sy(2)],
@@ -142,12 +146,12 @@ const P1_SKILLS: Record<string, [number, number]> = {
   'skakanie':                      [C3X, sy(6)],
   'spostrzegawczosc':              [C3X, sy(7)],
   'sztuka_rzemioslo':              [C3X, sy(8)],
-  // row 9 = blank for art spec
-  'sztuka_przetrwania':            [C3X, sy(10)],
-  'slusarstwo':                    [C3X, sy(11)],
-  'tropienie':                     [C3X, sy(12)],
-  'ukrywanie':                     [C3X, sy(13)],
-  // Column 4
+  // rows 9-10 = blank for art spec
+  'sztuka_przetrwania':            [C3X, sy(11)],
+  'slusarstwo':                    [C3X, sy(12)],
+  'tropienie':                     [C3X, sy(13)],
+  'ukrywanie':                     [C3X, sy(14)],
+  // Column 4 (13 rows, 0-12)
   'unik':                          [C4X, sy(0)],
   'urok_osobisty':                 [C4X, sy(1)],
   'walka_wrecz:bijatyka':          [C4X, sy(2)],
@@ -165,10 +169,10 @@ const BLANK_LANG_ROWS: [number, number, number][] = [
   [C1L, C1X, sy(12)], [C1L, C1X, sy(13)],
 ]
 const BLANK_SCIENCE_ROWS: [number, number, number][] = [
-  [C2L, C2X, sy(7)],
+  [C2L, C2X, sy(7)], [C2L, C2X, sy(8)],
 ]
 const BLANK_ART_ROWS: [number, number, number][] = [
-  [C3L, C3X, sy(9)],
+  [C3L, C3X, sy(9)], [C3L, C3X, sy(10)],
 ]
 const BLANK_MELEE_ROWS: [number, number, number][] = [
   [C4L, C4X, sy(3)], [C4L, C4X, sy(4)], [C4L, C4X, sy(5)], [C4L, C4X, sy(6)],
@@ -178,37 +182,37 @@ const BLANK_GUN_ROWS: [number, number, number][] = [
 ]
 
 // --- PAGE 1: Weapons table ---
-const WEAP_Y0 = 172       // first empty row (after "Nieuzbrojony")
-const WEAP_DY = 18
+const WEAP_Y0 = 165       // first empty row (after "Nieuzbrojony")
+const WEAP_DY = 15
 const WEAP_MAX = 6
 const WEAP_COLS = {
-  name: 45, regular: 152, hard: 208, extreme: 265,
-  damage: 315, range: 385, attacks: 440, ammo: 498, malfunction: 555,
+  name: 50, regular: 205, hard: 260, extreme: 305,
+  damage: 360, range: 420, attacks: 460, ammo: 520, malfunction: 578,
 } as const
 
 // --- PAGE 2: Backstory ---
-// Left column
+// Left column (calibrated from grid)
 const P2_BACK_L = [
-  { key: 'appearance_description', x: 55, y: 790, lines: 4 },
-  { key: 'ideology',               x: 55, y: 700, lines: 3 },
-  { key: 'significant_people',     x: 55, y: 630, lines: 3 },
-  { key: 'meaningful_locations',   x: 55, y: 555, lines: 3 },
-  { key: 'treasured_possessions',  x: 55, y: 480, lines: 4 },
+  { key: 'appearance_description', x: 55, y: 755, lines: 4 },
+  { key: 'ideology',               x: 55, y: 685, lines: 3 },
+  { key: 'significant_people',     x: 55, y: 625, lines: 3 },
+  { key: 'meaningful_locations',   x: 55, y: 570, lines: 3 },
+  { key: 'treasured_possessions',  x: 55, y: 515, lines: 4 },
 ] as const
 // Right column
 const P2_BACK_R = [
-  { key: 'traits',         x: 320, y: 790, lines: 4 },
-  { key: 'key_connection', x: 320, y: 700, lines: 3 },
+  { key: 'traits',         x: 340, y: 755, lines: 4 },
+  { key: 'key_connection', x: 340, y: 685, lines: 3 },
 ] as const
 
 // --- PAGE 2: Equipment ---
-const P2_EQ = { x1: 55, x2: 240, y0: 375, dy: 14, maxLines: 12 } as const
+const P2_EQ = { x1: 55, x2: 250, y0: 418, dy: 15, maxLines: 12 } as const
 
 // --- PAGE 2: Wealth ---
 const P2_WEALTH = {
-  spendingLevel: [445, 372] as [number, number],
-  cash:          [395, 357] as [number, number],
-  assets:        [390, 342] as [number, number],
+  spendingLevel: [535, 413] as [number, number],
+  cash:          [465, 395] as [number, number],
+  assets:        [465, 378] as [number, number],
 }
 
 // ============================================================
@@ -420,9 +424,13 @@ function fillBackstory(page: PDFPage, font: PDFFont, char: ExportCharacter) {
 }
 
 function fillEquipment(page: PDFPage, font: PDFFont, char: ExportCharacter) {
-  // Filter out weapons (they go in the weapons table on page 1)
+  // Filter out weapons (page 1 table) and structural items (housing/transport/lifestyle)
   const nonWeapons = char.equipment.filter(
-    (item) => !WEAPONS.some((w) => item.startsWith(w.name))
+    (item) =>
+      !WEAPONS.some((w) => item.startsWith(w.name)) &&
+      !item.startsWith('[Mieszkanie]') &&
+      !item.startsWith('[Transport]') &&
+      !item.startsWith('[Styl')
   )
 
   const sz = 7
