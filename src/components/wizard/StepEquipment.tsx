@@ -50,9 +50,11 @@ export function StepEquipment() {
   const lifestyleCostAssets = baseAssets * (selectedLifestyle.assetReductionPct / 100)
   const lifestyleCostCash = baseCash * (selectedLifestyle.cashReductionPct / 100)
 
+  const assetsAfterHL = Math.max(0, baseAssets - housingCostAssets - lifestyleCostAssets)
+
   const transportCost = selectedTransport.free ? 0 : selectedTransport.cost
 
-  const remainingAssets = Math.max(0, baseAssets - housingCostAssets - lifestyleCostAssets - transportCost)
+  const remainingAssets = Math.max(0, assetsAfterHL - transportCost)
   const remainingCash = Math.max(0, baseCash - housingCostCash - lifestyleCostCash)
 
   const cashOnHand = remainingCash
@@ -68,23 +70,19 @@ export function StepEquipment() {
   const equipmentByCategory = useMemo(() => getEquipmentByCategory(era), [era])
   const weapons = useMemo(() => getWeaponsForEra(era), [era])
 
-  // Equipment spending — items above lifestyle free threshold cost cash
-  const freeThreshold = selectedLifestyle.freeItemThreshold
+  // Equipment spending — ALL items cost cash
   const totalSpent = useMemo(() => {
     let sum = 0
     for (const category of Object.values(equipmentByCategory)) {
       for (const item of category) {
         const count = selectedItems.filter((name) => name === item.name).length
         if (count > 0) {
-          const price = parsePriceToNumber(item.price)
-          if (price > freeThreshold) {
-            sum += price * count
-          }
+          sum += parsePriceToNumber(item.price) * count
         }
       }
     }
     return sum
-  }, [selectedItems, equipmentByCategory, freeThreshold])
+  }, [selectedItems, equipmentByCategory])
 
   const overBudget = totalSpent > cashOnHand
 
@@ -104,6 +102,15 @@ export function StepEquipment() {
   }
   const removeCustomItem = (index: number) => setCustomItems((prev) => prev.filter((_, i) => i !== index))
   const addWeapon = (weapon: Weapon) => setSelectedItems((prev) => [...prev, `${weapon.name} (${weapon.damage}, ${weapon.range})`])
+
+  // Auto-reset transport if it became too expensive after housing/lifestyle change
+  const isTransportAffordable = (opt: TransportOption) => opt.free || opt.cost <= assetsAfterHL
+  if (!isTransportAffordable(selectedTransport)) {
+    const fallback = bracket.transportOptions.find(isTransportAffordable)
+    if (fallback && fallback.id !== transportId) {
+      setTransportId(fallback.id)
+    }
+  }
 
   const handleNext = () => {
     store.setEquipment(selectedItems)
@@ -125,28 +132,42 @@ export function StepEquipment() {
 
   return (
     <Card title="Ekwipunek i dobytek">
-      {/* Section A: Wealth Summary */}
+      {/* === BUDGET SUMMARY (top, always visible) === */}
       <div className="bg-coc-accent/10 border border-coc-accent/20 rounded-lg p-3 mb-4">
-        <div className="grid grid-cols-3 gap-2 text-sm">
-          <div>
-            <div className="text-xs text-coc-text-muted">Majętność</div>
-            <div className="font-medium font-mono">{creditRating}</div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+          <div className="flex justify-between">
+            <span className="text-coc-text-muted">Majętność:</span>
+            <span className="font-mono font-medium">{creditRating}</span>
           </div>
-          <div>
-            <div className="text-xs text-coc-text-muted">Dobytek</div>
-            <div className="font-medium">{curr(baseAssets)}</div>
+          <div className="flex justify-between">
+            <span className="text-coc-text-muted">Bracket:</span>
+            <span className="font-medium">{bracket.label}</span>
           </div>
-          <div>
-            <div className="text-xs text-coc-text-muted">Gotówka</div>
-            <div className="font-medium">{curr(baseCash)}</div>
+          <div className="flex justify-between">
+            <span className="text-coc-text-muted">Dobytek:</span>
+            <span className="font-mono">{curr(baseAssets)} <span className="text-coc-text-muted">&rarr;</span> <span className={remainingAssets > 0 ? 'text-green-500' : 'text-red-400'}>{curr(remainingAssets)}</span></span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-coc-text-muted">Gotówka:</span>
+            <span className="font-mono">{curr(baseCash)} <span className="text-coc-text-muted">&rarr;</span> <span className={remainingCash > 0 ? 'text-green-500' : 'text-red-400'}>{curr(remainingCash)}</span></span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-coc-text-muted">Wydatki:</span>
+            <span className="font-mono">{curr(wealth.spending)}/tydz.</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-coc-text-muted">Ekwipunek:</span>
+            <Badge variant={overBudget ? 'danger' : 'success'}>
+              {curr(totalSpent)} / {curr(cashOnHand)}
+            </Badge>
           </div>
         </div>
-        <div className="text-xs text-coc-text-muted mt-1">
-          Bracket: {bracket.label} | Wydatki: {curr(wealth.spending)}/tydzień
-        </div>
+        {overBudget && (
+          <p className="text-xs text-red-400 mt-1">Przekroczono budżet gotówkowy na ekwipunek!</p>
+        )}
       </div>
 
-      {/* Section B: Housing */}
+      {/* === HOUSING === */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
           <Home className="w-4 h-4 text-coc-accent-light" />
@@ -195,7 +216,7 @@ export function StepEquipment() {
         </div>
       </div>
 
-      {/* Section C: Lifestyle */}
+      {/* === LIFESTYLE === */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-4 h-4 text-coc-accent-light" />
@@ -203,7 +224,7 @@ export function StepEquipment() {
         </div>
         <div className="space-y-1.5">
           {bracket.lifestyleOptions.map((opt: LifestyleOption, i: number) => {
-            const isFree = i === 0  // first option is always the default/free one
+            const isFree = i === 0
             const assetCost = baseAssets * (opt.assetReductionPct / 100)
             return (
               <label
@@ -235,7 +256,6 @@ export function StepEquipment() {
                   </div>
                   <p className="text-xs text-coc-text-muted">
                     {opt.description}
-                    {opt.freeItemThreshold > 0 && ` — przedmioty ≤ ${curr(opt.freeItemThreshold)} darmowe`}
                     {opt.servants && ` — ${opt.servants}`}
                   </p>
                 </div>
@@ -245,127 +265,122 @@ export function StepEquipment() {
         </div>
       </div>
 
-      {/* Section D: Transport */}
+      {/* === TRANSPORT (with budget validation) === */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
           <Car className="w-4 h-4 text-coc-accent-light" />
           <h4 className="text-sm font-medium">Transport</h4>
         </div>
         <div className="space-y-1.5">
-          {bracket.transportOptions.map((opt: TransportOption) => (
-            <label
-              key={opt.id}
-              className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
-                transportId === opt.id
-                  ? 'border-coc-accent bg-coc-accent/10'
-                  : 'border-coc-border hover:border-coc-accent/50'
-              }`}
-            >
-              <input
-                type="radio"
-                name="transport"
-                value={opt.id}
-                checked={transportId === opt.id}
-                onChange={() => setTransportId(opt.id)}
-                className="mt-1"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{opt.label}</span>
-                  {opt.free ? (
-                    <Badge variant="warning">darmowe</Badge>
-                  ) : (
-                    <span className="text-xs text-coc-text-muted ml-auto">−{curr(opt.cost)}</span>
-                  )}
+          {bracket.transportOptions.map((opt: TransportOption) => {
+            const tooExpensive = !opt.free && opt.cost > assetsAfterHL
+            return (
+              <label
+                key={opt.id}
+                className={`flex items-start gap-3 p-2 rounded-lg border transition-colors ${
+                  tooExpensive
+                    ? 'border-coc-border/50 opacity-50 cursor-not-allowed'
+                    : transportId === opt.id
+                      ? 'border-coc-accent bg-coc-accent/10 cursor-pointer'
+                      : 'border-coc-border hover:border-coc-accent/50 cursor-pointer'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="transport"
+                  value={opt.id}
+                  checked={transportId === opt.id}
+                  onChange={() => !tooExpensive && setTransportId(opt.id)}
+                  disabled={tooExpensive}
+                  className="mt-1"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{opt.label}</span>
+                    {opt.free ? (
+                      <Badge variant="warning">darmowe</Badge>
+                    ) : tooExpensive ? (
+                      <span className="text-xs text-red-400 ml-auto">{curr(opt.cost)} — za drogie</span>
+                    ) : (
+                      <span className="text-xs text-coc-text-muted ml-auto">−{curr(opt.cost)} z dobytku</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-coc-text-muted">{opt.description}</p>
                 </div>
-                <p className="text-xs text-coc-text-muted">{opt.description}</p>
-              </div>
-            </label>
-          ))}
+              </label>
+            )
+          })}
         </div>
       </div>
 
-      {/* Section E: Wealth Summary + Form */}
-      <div className="mb-4 border border-coc-border rounded-lg p-3">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium">Pozostały dobytek</h4>
-          <Badge variant={remainingAssets > 0 ? 'success' : 'warning'}>
-            {curr(remainingAssets)}
-          </Badge>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 text-sm mb-3 bg-coc-surface-light/50 rounded-lg p-2">
-          <div className="flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-coc-accent-light" />
-            <div>
-              <div className="text-xs text-coc-text-muted">Gotówka na ręce</div>
-              <div className="font-mono font-bold">{curr(cashOnHand)}</div>
+      {/* === WEALTH FORM (checkboxes) === */}
+      {wealthFormAmount > 0 && (
+        <div className="mb-4 border border-coc-border rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Landmark className="w-4 h-4 text-coc-accent-light" />
+              <h4 className="text-sm font-medium">Forma dobytku</h4>
             </div>
+            <Badge variant="success">{curr(wealthFormAmount)}</Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <Landmark className="w-4 h-4 text-coc-text-muted" />
-            <div>
-              <div className="text-xs text-coc-text-muted">Dobytek ulokowany</div>
-              <div className="font-mono font-bold">{curr(wealthFormAmount)}</div>
-            </div>
-          </div>
-        </div>
-
-        {wealthFormAmount > 0 && (
-          <>
-            <p className="text-xs text-coc-text-muted mb-2">
-              Gdzie przechowujesz dobytek ({curr(wealthFormAmount)})? Wybierz formy — kwota zostanie podzielona równo.
-            </p>
-            <div className="space-y-1.5">
-              {wealthForms.map((form) => {
-                const isSelected = wealthFormIds.includes(form.id)
-                const perFormAmount = isSelected && wealthFormIds.length > 0
-                  ? wealthFormAmount / wealthFormIds.length
-                  : 0
-                return (
-                  <label
-                    key={form.id}
-                    className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
-                      isSelected
-                        ? 'border-coc-accent bg-coc-accent/10'
-                        : 'border-coc-border hover:border-coc-accent/50'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleWealthForm(form.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{form.label}</span>
-                        {isSelected && (
-                          <span className="text-xs text-coc-accent-light ml-auto">{curr(perFormAmount)}</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-coc-text-muted">{form.description}</p>
+          <p className="text-xs text-coc-text-muted mb-2">
+            Gdzie przechowujesz dobytek? Kwota dzielona równo na wybrane formy.
+          </p>
+          <div className="space-y-1.5">
+            {wealthForms.map((form) => {
+              const isSelected = wealthFormIds.includes(form.id)
+              const perFormAmount = isSelected && wealthFormIds.length > 0
+                ? wealthFormAmount / wealthFormIds.length
+                : 0
+              return (
+                <label
+                  key={form.id}
+                  className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
+                    isSelected
+                      ? 'border-coc-accent bg-coc-accent/10'
+                      : 'border-coc-border hover:border-coc-accent/50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleWealthForm(form.id)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{form.label}</span>
+                      {isSelected && (
+                        <span className="text-xs text-coc-accent-light ml-auto">{curr(perFormAmount)}</span>
+                      )}
                     </div>
-                  </label>
-                )
-              })}
-            </div>
-          </>
-        )}
+                    <p className="text-xs text-coc-text-muted">{form.description}</p>
+                  </div>
+                </label>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
-        <p className="text-xs text-coc-text-muted mt-2">
-          Gotówka na ręce to pieniądze które masz przy sobie — z nich kupujesz ekwipunek.
-          Forma dobytku to jak przechowujesz resztę — może mieć znaczenie fabularne w grze.
-        </p>
+      {/* === CASH ON HAND === */}
+      <div className="mb-4 bg-coc-surface-light/50 rounded-lg p-3">
+        <div className="flex items-center gap-2">
+          <Wallet className="w-4 h-4 text-coc-accent-light" />
+          <div>
+            <div className="text-xs text-coc-text-muted">Gotówka na ręce (budżet na ekwipunek)</div>
+            <div className="font-mono font-bold">{curr(cashOnHand)}</div>
+          </div>
+        </div>
       </div>
 
-      {/* Section F: Equipment catalog */}
+      {/* === EQUIPMENT CATALOG === */}
       <div className="border-t border-coc-border pt-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-medium">Ekwipunek</h4>
           <Badge variant={overBudget ? 'danger' : 'success'}>
-            Wydano: {curr(totalSpent)} / Gotówka: {curr(cashOnHand)}
-            {overBudget && ' — Przekroczono budżet!'}
+            Wydano: {curr(totalSpent)} / {curr(cashOnHand)}
+            {overBudget && ' — Przekroczono!'}
           </Badge>
         </div>
 
@@ -424,7 +439,7 @@ export function StepEquipment() {
           />
         </div>
 
-        {/* Equipment catalog */}
+        {/* Equipment catalog — all items show real prices */}
         <div className="max-h-[300px] overflow-y-auto space-y-4 pr-1 mb-4">
           {Object.entries(equipmentByCategory).map(([category, items]) => {
             const filtered = search
@@ -438,35 +453,29 @@ export function StepEquipment() {
                   {category}
                 </h4>
                 <div className="space-y-0.5">
-                  {filtered.map((item) => {
-                    const price = parsePriceToNumber(item.price)
-                    const isFree = price <= freeThreshold
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between py-1 px-2 rounded hover:bg-coc-surface-light transition-colors"
-                      >
-                        <div>
-                          <span className="text-sm">{item.name}</span>
-                          {item.description && (
-                            <span className="text-xs text-coc-text-muted ml-2">— {item.description}</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs ${isFree ? 'text-green-500' : 'text-coc-text-muted'}`}>
-                            {isFree ? 'darmowe' : item.price}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => addItem(item.name)}
-                            className="text-coc-accent-light hover:text-coc-accent cursor-pointer"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
+                  {filtered.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between py-1 px-2 rounded hover:bg-coc-surface-light transition-colors"
+                    >
+                      <div>
+                        <span className="text-sm">{item.name}</span>
+                        {item.description && (
+                          <span className="text-xs text-coc-text-muted ml-2">— {item.description}</span>
+                        )}
                       </div>
-                    )
-                  })}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-coc-text-muted">{item.price}</span>
+                        <button
+                          type="button"
+                          onClick={() => addItem(item.name)}
+                          className="text-coc-accent-light hover:text-coc-accent cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )
@@ -508,7 +517,7 @@ export function StepEquipment() {
 
       <div className="flex justify-between pt-2">
         <Button variant="secondary" onClick={() => store.prevStep()}>Wstecz</Button>
-        <Button onClick={handleNext}>Dalej</Button>
+        <Button onClick={handleNext} disabled={overBudget}>Dalej</Button>
       </div>
     </Card>
   )

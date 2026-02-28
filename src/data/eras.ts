@@ -23,7 +23,6 @@ export interface LifestyleOption {
   description: string
   assetReductionPct: number  // % of base dobytek consumed
   cashReductionPct: number   // % of base gotówka consumed
-  freeItemThreshold: number  // items ≤ this price are free in catalog
   servants: string           // description of servants included
 }
 
@@ -132,7 +131,7 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'homeless', label: 'Bezdomny', description: 'Śpi na ulicy, w schronisku lub w opuszczonych budynkach', assetReductionPct: 0, cashReductionPct: 0, ownership: 'free' },
         ],
         lifestyleOptions: [
-          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 0.5, servants: '' },
+          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, servants: '' },
         ],
         transportOptions: [
           { id: 'walking', label: 'Pieszo / autostop', description: 'Brak środków na transport', cost: 0, free: true },
@@ -149,8 +148,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'studio_own', label: 'Kawalerka (własność)', description: 'Skromne własne lokum na obrzeżach', assetReductionPct: 75, cashReductionPct: 0, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 0.5, servants: '' },
-          { id: 'average', label: 'Przeciętny', description: 'Proste posiłki, tanie rozrywki — powyżej stanu', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 2, servants: '' },
+          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, servants: '' },
+          { id: 'average', label: 'Przeciętny', description: 'Proste posiłki, tanie rozrywki — powyżej stanu', assetReductionPct: 25, cashReductionPct: 0, servants: '' },
         ],
         transportOptions: [
           { id: 'walking', label: 'Pieszo / komunikacja', description: 'Tramwaj, autobus — tanie przejazdy', cost: 0, free: true },
@@ -171,8 +170,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'own_house', label: 'Dom (własność)', description: 'Własny dom — prawie cały dobytek zamrożony', assetReductionPct: 75, cashReductionPct: 0, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'average', label: 'Przeciętny', description: 'Normalne restauracje, kino, prasa', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 5, servants: '' },
-          { id: 'wealthy', label: 'Zamożny', description: 'Dobre restauracje, kluby, rozrywka — z 1 służącym', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 15, servants: '1 służący' },
+          { id: 'average', label: 'Przeciętny', description: 'Normalne restauracje, kino, prasa', assetReductionPct: 0, cashReductionPct: 0, servants: '' },
+          { id: 'wealthy', label: 'Zamożny', description: 'Dobre restauracje, kluby, rozrywka — z 1 służącym', assetReductionPct: 25, cashReductionPct: 0, servants: '1 służący' },
         ],
         transportOptions: [
           { id: 'public', label: 'Komunikacja / taksówki', description: 'Wygodne przejazdy, okazjonalne taksówki', cost: 0, free: true },
@@ -194,8 +193,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'residence_plus', label: 'Rezydencja + nieruchomości', description: 'Rezydencja plus dodatkowe nieruchomości', assetReductionPct: 65, cashReductionPct: 15, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'wealthy', label: 'Zamożny', description: 'Dobre restauracje, kluby, rozrywka — z 1 służącym', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 15, servants: '1 służący' },
-          { id: 'rich', label: 'Bogaty', description: 'Najlepsze lokale, prywatne kluby — do 4 służących', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 50, servants: 'do 4 służących' },
+          { id: 'wealthy', label: 'Zamożny', description: 'Dobre restauracje, kluby, rozrywka — z 1 służącym', assetReductionPct: 0, cashReductionPct: 0, servants: '1 służący' },
+          { id: 'rich', label: 'Bogaty', description: 'Najlepsze lokale, prywatne kluby — do 4 służących', assetReductionPct: 25, cashReductionPct: 0, servants: 'do 4 służących' },
         ],
         transportOptions: [
           { id: 'taxi', label: 'Taksówki / 1. klasa', description: 'Wygodne przejazdy i taksówki', cost: 0, free: true },
@@ -216,8 +215,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'estate_properties', label: 'Posiadłość + nieruchomości', description: 'Posiadłość plus kamienice i ziemia', assetReductionPct: 65, cashReductionPct: 15, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'rich', label: 'Bogaty', description: 'Najlepsze lokale, prywatne kluby — 4 służących', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 50, servants: '4 służących' },
-          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 250, servants: 'pełna obsługa' },
+          { id: 'rich', label: 'Bogaty', description: 'Najlepsze lokale, prywatne kluby — 4 służących', assetReductionPct: 0, cashReductionPct: 0, servants: '4 służących' },
+          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa', assetReductionPct: 25, cashReductionPct: 0, servants: 'pełna obsługa' },
         ],
         transportOptions: [
           { id: 'car_chauffeur', label: 'Luksusowe auto + szofer', description: 'Prestiżowy samochód z szoferem', cost: 0, free: true },
@@ -236,7 +235,7 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'palace', label: 'Pałac / zamek', description: 'Monumentalna posiadłość', assetReductionPct: 40, cashReductionPct: 0, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa, prywatne przyjęcia', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 1000, servants: 'pełna obsługa' },
+          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa, prywatne przyjęcia', assetReductionPct: 0, cashReductionPct: 0, servants: 'pełna obsługa' },
         ],
         transportOptions: [
           { id: 'car_collection', label: 'Kolekcja pojazdów + szofer', description: 'Luksusowe samochody, szofer, garaż', cost: 0, free: true },
@@ -260,7 +259,7 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'homeless', label: 'Bezdomny', description: 'Śpi na ulicy, w schronisku lub w samochodzie', assetReductionPct: 0, cashReductionPct: 0, ownership: 'free' },
         ],
         lifestyleOptions: [
-          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 5, servants: '' },
+          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, servants: '' },
         ],
         transportOptions: [
           { id: 'walking', label: 'Pieszo', description: 'Brak środków na transport', cost: 0, free: true },
@@ -276,8 +275,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'studio_own', label: 'Kawalerka (własność)', description: 'Skromne własne lokum na obrzeżach', assetReductionPct: 75, cashReductionPct: 0, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 5, servants: '' },
-          { id: 'average', label: 'Przeciętny', description: 'Fast food, streaming — powyżej stanu', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 20, servants: '' },
+          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, servants: '' },
+          { id: 'average', label: 'Przeciętny', description: 'Fast food, streaming — powyżej stanu', assetReductionPct: 25, cashReductionPct: 0, servants: '' },
         ],
         transportOptions: [
           { id: 'walking', label: 'Pieszo / komunikacja', description: 'Autobus, metro — tanie przejazdy', cost: 0, free: true },
@@ -297,8 +296,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'own_house', label: 'Dom (własność)', description: 'Własny dom na przedmieściach', assetReductionPct: 75, cashReductionPct: 0, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'average', label: 'Przeciętny', description: 'Restauracje, kino, subskrypcje', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 50, servants: '' },
-          { id: 'wealthy', label: 'Zamożny', description: 'Dobre restauracje, siłownia, podróże — z 1 osobą do pomocy', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 150, servants: '1 osoba do pomocy' },
+          { id: 'average', label: 'Przeciętny', description: 'Restauracje, kino, subskrypcje', assetReductionPct: 0, cashReductionPct: 0, servants: '' },
+          { id: 'wealthy', label: 'Zamożny', description: 'Dobre restauracje, siłownia, podróże — z 1 osobą do pomocy', assetReductionPct: 25, cashReductionPct: 0, servants: '1 osoba do pomocy' },
         ],
         transportOptions: [
           { id: 'public', label: 'Komunikacja / Uber', description: 'Wygodne przejazdy, okazjonalne Uber', cost: 0, free: true },
@@ -319,8 +318,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'residence_plus', label: 'Willa + nieruchomości', description: 'Willa plus portfolio nieruchomości', assetReductionPct: 65, cashReductionPct: 15, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'wealthy', label: 'Zamożny', description: 'Dobre restauracje, siłownia, podróże — z 1 osobą do pomocy', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 150, servants: '1 osoba do pomocy' },
-          { id: 'rich', label: 'Bogaty', description: 'Najlepsze lokale, VIP, podróże 1. klasa — do 4 osób obsługi', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 500, servants: 'do 4 osób obsługi' },
+          { id: 'wealthy', label: 'Zamożny', description: 'Dobre restauracje, siłownia, podróże — z 1 osobą do pomocy', assetReductionPct: 0, cashReductionPct: 0, servants: '1 osoba do pomocy' },
+          { id: 'rich', label: 'Bogaty', description: 'Najlepsze lokale, VIP, podróże 1. klasa — do 4 osób obsługi', assetReductionPct: 25, cashReductionPct: 0, servants: 'do 4 osób obsługi' },
         ],
         transportOptions: [
           { id: 'taxi', label: 'Uber / taksówki', description: 'Wygodne przejazdy na życzenie', cost: 0, free: true },
@@ -340,8 +339,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'estate_properties', label: 'Posiadłość + nieruchomości', description: 'Posiadłość plus nieruchomości w wielu miastach', assetReductionPct: 65, cashReductionPct: 15, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'rich', label: 'Bogaty', description: 'Najlepsze lokale, VIP — 4 osoby obsługi', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 500, servants: '4 osoby obsługi' },
-          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 2000, servants: 'pełna obsługa' },
+          { id: 'rich', label: 'Bogaty', description: 'Najlepsze lokale, VIP — 4 osoby obsługi', assetReductionPct: 0, cashReductionPct: 0, servants: '4 osoby obsługi' },
+          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa', assetReductionPct: 25, cashReductionPct: 0, servants: 'pełna obsługa' },
         ],
         transportOptions: [
           { id: 'car_chauffeur', label: 'Luksusowe auto + szofer', description: 'Prestiżowy samochód z szoferem', cost: 0, free: true },
@@ -359,7 +358,7 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'palace', label: 'Mega-rezydencja', description: 'Monumentalna posiadłość', assetReductionPct: 40, cashReductionPct: 0, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 5000, servants: 'pełna obsługa' },
+          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa', assetReductionPct: 0, cashReductionPct: 0, servants: 'pełna obsługa' },
         ],
         transportOptions: [
           { id: 'car_collection', label: 'Kolekcja pojazdów + szofer', description: 'Luksusowe samochody, szofer', cost: 0, free: true },
@@ -383,7 +382,7 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'homeless', label: 'Bezdomny', description: 'Śpi na ulicy lub w przytułku', assetReductionPct: 0, cashReductionPct: 0, ownership: 'free' },
         ],
         lifestyleOptions: [
-          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 0.004, servants: '' },
+          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, servants: '' },
         ],
         transportOptions: [
           { id: 'walking', label: 'Pieszo', description: 'Brak środków na transport', cost: 0, free: true },
@@ -399,8 +398,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'lodging_own', label: 'Tanie kwatery (własność)', description: 'Skromne własne lokum', assetReductionPct: 75, cashReductionPct: 0, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 0.004, servants: '' },
-          { id: 'modest', label: 'Skromny', description: 'Proste posiłki, tani pub — powyżej stanu', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 0.02, servants: '' },
+          { id: 'poor', label: 'Biedny', description: 'Ledwo wiążesz koniec z końcem', assetReductionPct: 0, cashReductionPct: 0, servants: '' },
+          { id: 'modest', label: 'Skromny', description: 'Proste posiłki, tani pub — powyżej stanu', assetReductionPct: 25, cashReductionPct: 0, servants: '' },
         ],
         transportOptions: [
           { id: 'omnibus', label: 'Pieszo / omnibus', description: 'Tani transport konny', cost: 0, free: true },
@@ -419,8 +418,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'own_cottage', label: 'Domek (własność)', description: 'Domek na przedmieściu', assetReductionPct: 75, cashReductionPct: 0, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'modest', label: 'Skromny', description: 'Przyzwoite posiłki, herbaciarnia, teatr', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 0.02, servants: '' },
-          { id: 'average', label: 'Przeciętny', description: 'Dobre posiłki, rozrywka — z 1 służącym', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 0.05, servants: '1 służący' },
+          { id: 'modest', label: 'Skromny', description: 'Przyzwoite posiłki, herbaciarnia, teatr', assetReductionPct: 0, cashReductionPct: 0, servants: '' },
+          { id: 'average', label: 'Przeciętny', description: 'Dobre posiłki, rozrywka — z 1 służącym', assetReductionPct: 25, cashReductionPct: 0, servants: '1 służący' },
         ],
         transportOptions: [
           { id: 'omnibus', label: 'Omnibus / dorożka', description: 'Regularne przejazdy', cost: 0, free: true },
@@ -440,8 +439,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'townhouse_plus', label: 'Dom + nieruchomości', description: 'Dom w mieście plus kamienice', assetReductionPct: 65, cashReductionPct: 15, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'average', label: 'Przeciętny', description: 'Dobre restauracje, kluby dżentelmenów — z 1 służącym', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 0.05, servants: '1 służący' },
-          { id: 'wealthy', label: 'Zamożny', description: 'Najlepsze lokale — do 4 służących', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 0.25, servants: 'do 4 służących' },
+          { id: 'average', label: 'Przeciętny', description: 'Dobre restauracje, kluby dżentelmenów — z 1 służącym', assetReductionPct: 0, cashReductionPct: 0, servants: '1 służący' },
+          { id: 'wealthy', label: 'Zamożny', description: 'Najlepsze lokale — do 4 służących', assetReductionPct: 25, cashReductionPct: 0, servants: 'do 4 służących' },
         ],
         transportOptions: [
           { id: 'cab', label: 'Dorożka', description: 'Regularne przejazdy dorożką', cost: 0, free: true },
@@ -461,8 +460,8 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'estate', label: 'Posiadłość + nieruchomości', description: 'Okazała posiadłość plus majątek ziemski', assetReductionPct: 65, cashReductionPct: 15, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'wealthy', label: 'Zamożny', description: 'Najlepsze lokale, prywatne kluby — 4 służących', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 0.25, servants: '4 służących' },
-          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa', assetReductionPct: 25, cashReductionPct: 0, freeItemThreshold: 1, servants: 'pełna obsługa' },
+          { id: 'wealthy', label: 'Zamożny', description: 'Najlepsze lokale, prywatne kluby — 4 służących', assetReductionPct: 0, cashReductionPct: 0, servants: '4 służących' },
+          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa', assetReductionPct: 25, cashReductionPct: 0, servants: 'pełna obsługa' },
         ],
         transportOptions: [
           { id: 'carriage', label: 'Powóz luksusowy', description: 'Elegancki powóz z parą koni', cost: 0, free: true },
@@ -480,7 +479,7 @@ export const ERAS: Record<Era, EraDefinition> = {
           { id: 'multiple_properties', label: 'Wiele nieruchomości', description: 'Rezydencja w Londynie i posiadłość na wsi', assetReductionPct: 40, cashReductionPct: 0, ownership: 'own' },
         ],
         lifestyleOptions: [
-          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa', assetReductionPct: 0, cashReductionPct: 0, freeItemThreshold: 5, servants: 'pełna obsługa' },
+          { id: 'luxury', label: 'Luksusowy', description: 'Najwyższy standard — pełna obsługa', assetReductionPct: 0, cashReductionPct: 0, servants: 'pełna obsługa' },
         ],
         transportOptions: [
           { id: 'stable', label: 'Stajnia koni + powozy + stangret', description: 'Pełne wyposażenie transportowe', cost: 0, free: true },
