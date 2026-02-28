@@ -74,7 +74,7 @@ export function TestPdfPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'test-export.pdf'
+      a.download = 'test-export-v6.pdf'
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
