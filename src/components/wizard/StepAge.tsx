@@ -26,19 +26,22 @@ export function StepAge() {
     if (isLocked) return
     const value = young ? rollLuckYoung() : rollLuck()
     setLuck(value)
+    store.setLuck(value)
     setLuckRolled(true)
-  }, [young, isLocked])
+  }, [young, isLocked, store])
 
   // When age changes, reset luck if it was already rolled (young/adult may differ)
   const handleAgeChange = (newAge: number) => {
     if (isLocked) return
     setAge(newAge)
+    store.setAge(newAge)
     if (luckRolled) {
       const wasYoung = isYoungCharacter(age)
       const isNowYoung = isYoungCharacter(newAge)
       if (wasYoung !== isNowYoung) {
         setLuck(null)
         setLuckRolled(false)
+        useCharacterStore.setState({ luck: null })
       }
     }
   }
@@ -153,7 +156,7 @@ export function StepAge() {
           ) : (
             <NumberInput
               value={luck ?? 0}
-              onChange={(v) => { setLuck(v); setLuckRolled(true) }}
+              onChange={(v) => { setLuck(v); store.setLuck(v); setLuckRolled(true) }}
               min={1}
               max={99}
             />

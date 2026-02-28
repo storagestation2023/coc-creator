@@ -6,6 +6,8 @@ import type { Era, CreationMethod, CharacteristicKey } from '@/types/common'
 export interface WizardState {
   // Current step (0-indexed)
   currentStep: number
+  // Saved step for resume after page refresh
+  savedStep: number
 
   // Invite code data
   inviteCodeId: string | null
@@ -61,9 +63,10 @@ export interface WizardState {
   customItems: string[]
   housingId: string
   clothingId: string
+  transportId: string
+  lifestyleId: string
+  wealthFormId: string
   cashOnHand: number
-  bankSavings: number
-  investments: number
   // Display strings (kept for DB backward compatibility)
   cash: string
   assets: string
@@ -92,26 +95,18 @@ export interface WizardState {
   setEquipment: (equipment: string[]) => void
   setCustomItems: (items: string[]) => void
   setLifestyle: (data: {
-    housingId: string; clothingId: string;
-    cashOnHand: number; bankSavings: number; investments: number;
+    housingId: string; clothingId: string; transportId: string; lifestyleId: string;
+    wealthFormId: string; cashOnHand: number;
     cash: string; assets: string; spendingLevel: string
   }) => void
+  /** Update server-side invite code data without resetting character progress */
+  updateInviteCodeMeta: (data: { timesUsed: number }) => void
   /** Abandon current character, increment timesUsed, reset character data, go to step 1 */
   abandonCharacter: () => void
   reset: () => void
 }
 
-const initialState = {
-  currentStep: 0,
-  inviteCodeId: null,
-  inviteCode: null,
-  methods: [],
-  method: null,
-  era: null,
-  perks: [],
-  maxTries: 1,
-  timesUsed: 0,
-  maxSkillValue: 99,
+const characterDataDefaults = {
   name: '',
   age: null,
   gender: '',
@@ -134,12 +129,28 @@ const initialState = {
   customItems: [],
   housingId: '',
   clothingId: '',
+  transportId: '',
+  lifestyleId: '',
+  wealthFormId: '',
   cashOnHand: 0,
-  bankSavings: 0,
-  investments: 0,
   cash: '',
   assets: '',
   spendingLevel: '',
+}
+
+const initialState = {
+  currentStep: 0,
+  savedStep: 0,
+  inviteCodeId: null,
+  inviteCode: null,
+  methods: [],
+  method: null,
+  era: null,
+  perks: [],
+  maxTries: 1,
+  timesUsed: 0,
+  maxSkillValue: 80,
+  ...characterDataDefaults,
 }
 
 export const useCharacterStore = create<WizardState>()(
@@ -147,9 +158,16 @@ export const useCharacterStore = create<WizardState>()(
     (set) => ({
       ...initialState,
 
-      setStep: (step) => set({ currentStep: step }),
-      nextStep: () => set((s) => ({ currentStep: s.currentStep + 1 })),
-      prevStep: () => set((s) => ({ currentStep: Math.max(0, s.currentStep - 1) })),
+      setStep: (step) => set((s) => ({
+        currentStep: step,
+        // When navigating away from step 0, save the step for resume
+        savedStep: step > 0 ? step : s.savedStep,
+      })),
+      nextStep: () => set((s) => ({ currentStep: s.currentStep + 1, savedStep: s.currentStep + 1 })),
+      prevStep: () => set((s) => {
+        const prev = Math.max(0, s.currentStep - 1)
+        return { currentStep: prev, savedStep: prev > 0 ? prev : s.savedStep }
+      }),
 
       setInviteCode: (data) =>
         set({
@@ -162,35 +180,8 @@ export const useCharacterStore = create<WizardState>()(
           maxTries: data.maxTries,
           timesUsed: data.timesUsed,
           maxSkillValue: data.maxSkillValue,
-          // Reset all character data from previous iterations
-          name: '',
-          age: null,
-          gender: '',
-          appearance: '',
-          characteristics: {},
-          luck: null,
-          characteristicsLocked: false,
-          characteristicSwap: null,
-          ageLocked: false,
-          ageModifiersLocked: false,
-          ageDeductions: {},
-          eduRolls: [],
-          eduAfterRolls: null,
-          derived: null,
-          occupationId: null,
-          occupationSkillPoints: {},
-          personalSkillPoints: {},
-          backstory: {},
-          equipment: [],
-          customItems: [],
-          housingId: '',
-          clothingId: '',
-          cashOnHand: 0,
-          bankSavings: 0,
-          investments: 0,
-          cash: '',
-          assets: '',
-          spendingLevel: '',
+          savedStep: 0,
+          ...characterDataDefaults,
         }),
 
       setMethod: (method) => set({ method }),
@@ -222,13 +213,15 @@ export const useCharacterStore = create<WizardState>()(
       setLifestyle: (data) =>
         set({
           housingId: data.housingId, clothingId: data.clothingId,
-          cashOnHand: data.cashOnHand, bankSavings: data.bankSavings, investments: data.investments,
+          transportId: data.transportId, lifestyleId: data.lifestyleId,
+          wealthFormId: data.wealthFormId, cashOnHand: data.cashOnHand,
           cash: data.cash, assets: data.assets, spendingLevel: data.spendingLevel,
         }),
 
+      updateInviteCodeMeta: (data) => set({ timesUsed: data.timesUsed }),
+
       abandonCharacter: () =>
         set((s) => ({
-          // Keep invite code data, increment timesUsed
           currentStep: 1,
           inviteCodeId: s.inviteCodeId,
           inviteCode: s.inviteCode,
@@ -239,35 +232,7 @@ export const useCharacterStore = create<WizardState>()(
           maxTries: s.maxTries,
           timesUsed: s.timesUsed + 1,
           maxSkillValue: s.maxSkillValue,
-          // Reset all character data
-          name: '',
-          age: null,
-          gender: '',
-          appearance: '',
-          characteristics: {},
-          luck: null,
-          characteristicsLocked: false,
-          characteristicSwap: null,
-          ageLocked: false,
-          ageModifiersLocked: false,
-          ageDeductions: {},
-          eduRolls: [],
-          eduAfterRolls: null,
-          derived: null,
-          occupationId: null,
-          occupationSkillPoints: {},
-          personalSkillPoints: {},
-          backstory: {},
-          equipment: [],
-          customItems: [],
-          housingId: '',
-          clothingId: '',
-          cashOnHand: 0,
-          bankSavings: 0,
-          investments: 0,
-          cash: '',
-          assets: '',
-          spendingLevel: '',
+          ...characterDataDefaults,
         })),
 
       reset: () => set(initialState),

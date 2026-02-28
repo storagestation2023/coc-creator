@@ -24,7 +24,7 @@ export function InviteCodeManager() {
   const [newEra, setNewEra] = useState<Era>('classic_1920s')
   const [newMaxTries, setNewMaxTries] = useState(1)
   const [newPerks, setNewPerks] = useState<string[]>([])
-  const [newMaxSkillValue, setNewMaxSkillValue] = useState(99)
+  const [newMaxSkillValue, setNewMaxSkillValue] = useState(80)
   const [creating, setCreating] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
@@ -234,7 +234,7 @@ export function InviteCodeManager() {
                       {code.times_used}/{code.max_tries} użyć
                     </Badge>
                     {!code.is_active && <Badge variant="danger">Nieaktywny</Badge>}
-                    {code.max_skill_value && code.max_skill_value < 99 && (
+                    {code.max_skill_value && code.max_skill_value !== 80 && (
                       <Badge variant="warning">Maks. umiejętność: {code.max_skill_value}</Badge>
                     )}
                     {perks.map((p) => (

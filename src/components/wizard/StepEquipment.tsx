@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react'
-import { Plus, Trash2, Search, Home, Shirt, Wallet, Building2, TrendingUp } from 'lucide-react'
+import { Plus, Trash2, Search, Home, Shirt, Car, Sparkles, Wallet, Landmark } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { getEquipmentByCategory } from '@/data/equipment'
 import { getWeaponsForEra, type Weapon } from '@/data/weapons'
-import { getWealthBracket, formatCurrency, type HousingOption, type ClothingOption } from '@/data/eras'
+import {
+  getWealthBracket, formatCurrency, LIFESTYLE_LEVELS, WEALTH_FORMS,
+  type HousingOption, type ClothingOption, type TransportOption, type LifestyleLevel,
+} from '@/data/eras'
 import { getSkillById } from '@/data/skills'
 import type { Era } from '@/types/common'
 import { Card } from '@/components/ui/Card'
@@ -22,23 +25,36 @@ export function StepEquipment() {
     (typeof getSkillById('majetnosc')?.base === 'number' ? (getSkillById('majetnosc')?.base as number) : 0)
 
   const wealth = getWealthBracket(era, creditRating)
+  const lifestyleLevels = LIFESTYLE_LEVELS[era]
+  const wealthForms = WEALTH_FORMS[era]
+
+  // Determine default lifestyle: highest free level for this CR
+  const defaultLifestyle = [...lifestyleLevels].reverse().find((l) => creditRating >= l.minCreditRating) ?? lifestyleLevels[0]
 
   // Lifestyle choices
   const [housingId, setHousingId] = useState(store.housingId || wealth.housingOptions[0]?.id || '')
   const [clothingId, setClothingId] = useState(store.clothingId || wealth.clothingOptions[0]?.id || '')
+  const [transportId, setTransportId] = useState(store.transportId || wealth.transportOptions[0]?.id || '')
+  const [lifestyleId, setLifestyleId] = useState(store.lifestyleId || defaultLifestyle.id)
+  const [wealthFormId, setWealthFormId] = useState(store.wealthFormId || wealthForms[0]?.id || '')
 
   const selectedHousing = wealth.housingOptions.find((h) => h.id === housingId) ?? wealth.housingOptions[0]
   const selectedClothing = wealth.clothingOptions.find((c) => c.id === clothingId) ?? wealth.clothingOptions[0]
+  const selectedTransport = wealth.transportOptions.find((t) => t.id === transportId) ?? wealth.transportOptions[0]
+  const selectedLifestyle = lifestyleLevels.find((l) => l.id === lifestyleId) ?? defaultLifestyle
+
+  // Lifestyle cost: 0 if CR >= minCR, otherwise the cost
+  const lifestyleCostValue = creditRating >= selectedLifestyle.minCreditRating ? 0 : selectedLifestyle.cost
 
   // Budget calculations
   const totalAssets = wealth.assetsNumeric
-  const lifestyleCost = (selectedHousing?.cost ?? 0) + (selectedClothing?.cost ?? 0)
-  const remainingAssets = Math.max(0, totalAssets - lifestyleCost)
+  const totalLifestyleCost = (selectedHousing?.cost ?? 0) + (selectedClothing?.cost ?? 0) + (selectedTransport?.cost ?? 0) + lifestyleCostValue
+  const remainingAssets = Math.max(0, totalAssets - totalLifestyleCost)
 
-  // Asset allocation
-  const [cashOnHand, setCashOnHand] = useState(store.cashOnHand || Math.round(remainingAssets * 0.6))
-  const [bankSavings, setBankSavings] = useState(store.bankSavings || Math.round(remainingAssets * 0.3))
-  const [investments, setInvestments] = useState(store.investments || Math.max(0, remainingAssets - Math.round(remainingAssets * 0.6) - Math.round(remainingAssets * 0.3)))
+  // Cash on hand = bracket's default cash amount (auto, not editable)
+  // Capped at remaining assets so we don't go negative on wealth form
+  const cashOnHand = Math.min(wealth.cashNumeric, remainingAssets)
+  const wealthFormAmount = Math.max(0, remainingAssets - cashOnHand)
 
   // Equipment
   const [selectedItems, setSelectedItems] = useState<string[]>(store.equipment)
@@ -50,7 +66,8 @@ export function StepEquipment() {
   const equipmentByCategory = useMemo(() => getEquipmentByCategory(era), [era])
   const weapons = useMemo(() => getWeaponsForEra(era), [era])
 
-  // Equipment spending from cash on hand
+  // Equipment spending — items above lifestyle free threshold cost cash
+  const freeThreshold = selectedLifestyle.freeItemThreshold
   const totalSpent = useMemo(() => {
     let sum = 0
     for (const category of Object.values(equipmentByCategory)) {
@@ -58,82 +75,21 @@ export function StepEquipment() {
         const count = selectedItems.filter((name) => name === item.name).length
         if (count > 0) {
           const price = parsePriceToNumber(item.price)
-          // Items below spending level are free
-          if (price > wealth.spendingLevelNumeric) {
+          if (price > freeThreshold) {
             sum += price * count
           }
         }
       }
     }
     return sum
-  }, [selectedItems, equipmentByCategory, wealth.spendingLevelNumeric])
+  }, [selectedItems, equipmentByCategory, freeThreshold])
 
   const overBudget = totalSpent > cashOnHand
-  const allocationTotal = cashOnHand + bankSavings + investments
-  const allocationValid = Math.abs(allocationTotal - remainingAssets) <= 1
 
-  // Recalculate allocation when lifestyle changes
-  const handleHousingChange = (id: string) => {
-    setHousingId(id)
-    const newHousing = wealth.housingOptions.find((h) => h.id === id)
-    const newRemaining = Math.max(0, totalAssets - (newHousing?.cost ?? 0) - (selectedClothing?.cost ?? 0))
-    redistributeAllocation(newRemaining)
-  }
-
-  const handleClothingChange = (id: string) => {
-    setClothingId(id)
-    const newClothing = wealth.clothingOptions.find((c) => c.id === id)
-    const newRemaining = Math.max(0, totalAssets - (selectedHousing?.cost ?? 0) - (newClothing?.cost ?? 0))
-    redistributeAllocation(newRemaining)
-  }
-
-  const redistributeAllocation = (total: number) => {
-    const c = Math.round(total * 0.6)
-    const b = Math.round(total * 0.3)
-    const inv = Math.max(0, total - c - b)
-    setCashOnHand(c)
-    setBankSavings(b)
-    setInvestments(inv)
-  }
-
-  const handleAllocationPreset = (preset: 'cash' | 'balanced' | 'invested') => {
-    if (preset === 'cash') {
-      setCashOnHand(remainingAssets)
-      setBankSavings(0)
-      setInvestments(0)
-    } else if (preset === 'balanced') {
-      redistributeAllocation(remainingAssets)
-    } else {
-      const c = Math.round(remainingAssets * 0.2)
-      const b = Math.round(remainingAssets * 0.2)
-      setInvestments(Math.max(0, remainingAssets - c - b))
-      setCashOnHand(c)
-      setBankSavings(b)
-    }
-  }
-
-  const handleAllocationChange = (field: 'cash' | 'bank' | 'invest', value: number) => {
-    const v = Math.max(0, Math.round(value))
-    if (field === 'cash') {
-      setCashOnHand(v)
-      const leftover = Math.max(0, remainingAssets - v)
-      const bRatio = bankSavings / (bankSavings + investments || 1)
-      setBankSavings(Math.round(leftover * bRatio))
-      setInvestments(Math.max(0, leftover - Math.round(leftover * bRatio)))
-    } else if (field === 'bank') {
-      setBankSavings(v)
-      const leftover = Math.max(0, remainingAssets - v)
-      const cRatio = cashOnHand / (cashOnHand + investments || 1)
-      setCashOnHand(Math.round(leftover * cRatio))
-      setInvestments(Math.max(0, leftover - Math.round(leftover * cRatio)))
-    } else {
-      setInvestments(v)
-      const leftover = Math.max(0, remainingAssets - v)
-      const cRatio = cashOnHand / (cashOnHand + bankSavings || 1)
-      setCashOnHand(Math.round(leftover * cRatio))
-      setBankSavings(Math.max(0, leftover - Math.round(leftover * cRatio)))
-    }
-  }
+  const handleHousingChange = (id: string) => setHousingId(id)
+  const handleClothingChange = (id: string) => setClothingId(id)
+  const handleTransportChange = (id: string) => setTransportId(id)
+  const handleLifestyleChange = (id: string) => setLifestyleId(id)
 
   const addItem = (itemName: string) => setSelectedItems((prev) => [...prev, itemName])
   const removeItem = (index: number) => setSelectedItems((prev) => prev.filter((_, i) => i !== index))
@@ -152,12 +108,13 @@ export function StepEquipment() {
     store.setLifestyle({
       housingId,
       clothingId,
+      transportId,
+      lifestyleId,
+      wealthFormId,
       cashOnHand,
-      bankSavings,
-      investments,
       cash: formatCurrency(era, cashOnHand),
       assets: formatCurrency(era, totalAssets),
-      spendingLevel: wealth.spendingLevel,
+      spendingLevel: selectedLifestyle.label,
     })
     store.nextStep()
   }
@@ -168,7 +125,7 @@ export function StepEquipment() {
     <Card title="Ekwipunek i majątek">
       {/* Section A: Wealth Summary */}
       <div className="bg-coc-accent/10 border border-coc-accent/20 rounded-lg p-3 mb-4">
-        <div className="grid grid-cols-3 gap-2 text-sm">
+        <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <div className="text-xs text-coc-text-muted">Majętność</div>
             <div className="font-medium font-mono">{creditRating}</div>
@@ -177,14 +134,7 @@ export function StepEquipment() {
             <div className="text-xs text-coc-text-muted">Majątek łączny</div>
             <div className="font-medium">{wealth.assets}</div>
           </div>
-          <div>
-            <div className="text-xs text-coc-text-muted">Poziom życia</div>
-            <div className="font-medium">{wealth.spendingLevel}/dzień</div>
-          </div>
         </div>
-        <p className="text-xs text-coc-text-muted mt-2">
-          Przedmioty za ≤ {wealth.spendingLevel} nie obciążają Twojej gotówki (drobne wydatki dnia codziennego).
-        </p>
       </div>
 
       {/* Section B: Housing */}
@@ -234,11 +184,11 @@ export function StepEquipment() {
           <Shirt className="w-4 h-4 text-coc-accent-light" />
           <h4 className="text-sm font-medium">Ubranie</h4>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="space-y-1.5">
           {wealth.clothingOptions.map((opt: ClothingOption) => (
             <label
               key={opt.id}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+              className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
                 clothingId === opt.id
                   ? 'border-coc-accent bg-coc-accent/10'
                   : 'border-coc-border hover:border-coc-accent/50'
@@ -250,86 +200,175 @@ export function StepEquipment() {
                 value={opt.id}
                 checked={clothingId === opt.id}
                 onChange={() => handleClothingChange(opt.id)}
-                className="sr-only"
+                className="mt-1"
               />
-              <div>
-                <div className="text-sm font-medium">{opt.label}</div>
-                <div className="text-xs text-coc-text-muted">
-                  {opt.cost > 0 ? `−${curr(opt.cost)}` : 'darmowe'}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{opt.label}</span>
+                  {opt.cost > 0 ? (
+                    <span className="text-xs text-coc-text-muted ml-auto">−{curr(opt.cost)}</span>
+                  ) : (
+                    <Badge variant="warning">darmowe</Badge>
+                  )}
                 </div>
+                <p className="text-xs text-coc-text-muted">{opt.description}</p>
               </div>
             </label>
           ))}
         </div>
       </div>
 
-      {/* Section D: Asset Allocation */}
+      {/* Section D: Transport */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Car className="w-4 h-4 text-coc-accent-light" />
+          <h4 className="text-sm font-medium">Transport</h4>
+        </div>
+        <div className="space-y-1.5">
+          {wealth.transportOptions.map((opt: TransportOption) => (
+            <label
+              key={opt.id}
+              className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
+                transportId === opt.id
+                  ? 'border-coc-accent bg-coc-accent/10'
+                  : 'border-coc-border hover:border-coc-accent/50'
+              }`}
+            >
+              <input
+                type="radio"
+                name="transport"
+                value={opt.id}
+                checked={transportId === opt.id}
+                onChange={() => handleTransportChange(opt.id)}
+                className="mt-1"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{opt.label}</span>
+                  {opt.cost > 0 ? (
+                    <span className="text-xs text-coc-text-muted ml-auto">−{curr(opt.cost)}</span>
+                  ) : (
+                    <Badge variant="warning">darmowe</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-coc-text-muted">{opt.description}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Section E: Lifestyle */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="w-4 h-4 text-coc-accent-light" />
+          <h4 className="text-sm font-medium">Styl życia</h4>
+        </div>
+        <div className="space-y-1.5">
+          {lifestyleLevels.map((opt: LifestyleLevel) => {
+            const isFree = creditRating >= opt.minCreditRating
+            return (
+              <label
+                key={opt.id}
+                className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
+                  lifestyleId === opt.id
+                    ? 'border-coc-accent bg-coc-accent/10'
+                    : 'border-coc-border hover:border-coc-accent/50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="lifestyle"
+                  value={opt.id}
+                  checked={lifestyleId === opt.id}
+                  onChange={() => handleLifestyleChange(opt.id)}
+                  className="mt-1"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{opt.label}</span>
+                    {isFree ? (
+                      <Badge variant="success">darmowe (CR {opt.minCreditRating}+)</Badge>
+                    ) : (
+                      <span className="text-xs text-coc-text-muted ml-auto">−{curr(opt.cost)} z majątku</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-coc-text-muted">
+                    {opt.description} — przedmioty ≤ {curr(opt.freeItemThreshold)} darmowe
+                  </p>
+                </div>
+              </label>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Section F: Wealth Summary + Form */}
       <div className="mb-4 border border-coc-border rounded-lg p-3">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-medium">Podział pozostałego majątku</h4>
-          <Badge variant={allocationValid ? 'success' : 'danger'}>
-            Pozostało: {curr(remainingAssets)}
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium">Pozostały majątek</h4>
+          <Badge variant={remainingAssets > 0 ? 'success' : 'warning'}>
+            {curr(remainingAssets)}
           </Badge>
         </div>
 
-        <div className="flex gap-1 mb-3">
-          <Button size="sm" variant={cashOnHand === remainingAssets ? 'primary' : 'secondary'} onClick={() => handleAllocationPreset('cash')}>
-            Gotówka
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => handleAllocationPreset('balanced')}>
-            Zrównoważone
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => handleAllocationPreset('invested')}>
-            Zainwestowane
-          </Button>
+        <div className="grid grid-cols-2 gap-2 text-sm mb-3 bg-coc-surface-light/50 rounded-lg p-2">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-coc-accent-light" />
+            <div>
+              <div className="text-xs text-coc-text-muted">Gotówka na ręce</div>
+              <div className="font-mono font-bold">{curr(cashOnHand)}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Landmark className="w-4 h-4 text-coc-text-muted" />
+            <div>
+              <div className="text-xs text-coc-text-muted">Majątek ulokowany</div>
+              <div className="font-mono font-bold">{curr(wealthFormAmount)}</div>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-coc-text-muted flex-shrink-0" />
-            <label className="text-sm w-36 flex-shrink-0">Gotówka na ręce</label>
-            <input
-              type="number"
-              min={0}
-              max={remainingAssets}
-              value={cashOnHand}
-              onChange={(e) => handleAllocationChange('cash', Number(e.target.value))}
-              className="flex-1 px-2 py-1 text-sm bg-coc-surface-light border border-coc-border rounded text-coc-text font-mono text-right"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-coc-text-muted flex-shrink-0" />
-            <label className="text-sm w-36 flex-shrink-0">Oszczędności w banku</label>
-            <input
-              type="number"
-              min={0}
-              max={remainingAssets}
-              value={bankSavings}
-              onChange={(e) => handleAllocationChange('bank', Number(e.target.value))}
-              className="flex-1 px-2 py-1 text-sm bg-coc-surface-light border border-coc-border rounded text-coc-text font-mono text-right"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-coc-text-muted flex-shrink-0" />
-            <label className="text-sm w-36 flex-shrink-0">Inwestycje</label>
-            <input
-              type="number"
-              min={0}
-              max={remainingAssets}
-              value={investments}
-              onChange={(e) => handleAllocationChange('invest', Number(e.target.value))}
-              className="flex-1 px-2 py-1 text-sm bg-coc-surface-light border border-coc-border rounded text-coc-text font-mono text-right"
-            />
-          </div>
-        </div>
+        {wealthFormAmount > 0 && (
+          <>
+            <p className="text-xs text-coc-text-muted mb-2">
+              Gdzie przechowujesz resztę majątku ({curr(wealthFormAmount)})?
+            </p>
+            <div className="space-y-1.5">
+              {wealthForms.map((form) => (
+                <label
+                  key={form.id}
+                  className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
+                    wealthFormId === form.id
+                      ? 'border-coc-accent bg-coc-accent/10'
+                      : 'border-coc-border hover:border-coc-accent/50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="wealthForm"
+                    value={form.id}
+                    checked={wealthFormId === form.id}
+                    onChange={() => setWealthFormId(form.id)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium">{form.label}</span>
+                    <p className="text-xs text-coc-text-muted">{form.description}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </>
+        )}
 
         <p className="text-xs text-coc-text-muted mt-2">
-          Gotówka = pieniądze przy sobie (do wydania na ekwipunek). Oszczędności w banku wymagają wizyty.
-          Inwestycje to majątek długoterminowy, nie można go szybko spieniężyć.
+          Gotówka na ręce to pieniądze które masz przy sobie — z nich kupujesz ekwipunek.
+          Forma majątku to jak przechowujesz resztę — może mieć znaczenie fabularne w grze.
         </p>
       </div>
 
-      {/* Section E: Equipment catalog */}
+      {/* Section G: Equipment catalog */}
       <div className="border-t border-coc-border pt-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-medium">Ekwipunek</h4>
@@ -410,7 +449,7 @@ export function StepEquipment() {
                 <div className="space-y-0.5">
                   {filtered.map((item) => {
                     const price = parsePriceToNumber(item.price)
-                    const isFree = price <= wealth.spendingLevelNumeric
+                    const isFree = price <= freeThreshold
                     return (
                       <div
                         key={item.id}

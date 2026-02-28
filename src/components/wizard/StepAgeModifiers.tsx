@@ -46,10 +46,13 @@ export function StepAgeModifiers() {
     if (hasStoredEduRolls) return // Can't re-roll if already persisted
     const result = eduImprovementRoll(currentEdu)
     const newRolls = [...eduRolls, result]
+    const newEdu = result.improved ? result.newEdu : currentEdu
     setEduRolls(newRolls)
     if (result.improved) {
       setCurrentEdu(result.newEdu)
     }
+    // Persist immediately so they survive page refresh
+    store.setEduRolls(newRolls, newEdu)
   }
 
   const handleAbandon = async () => {

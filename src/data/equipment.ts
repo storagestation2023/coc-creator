@@ -10,8 +10,6 @@ export interface EquipmentItem {
 }
 
 export const EQUIPMENT_CATEGORIES = [
-  'Transport',
-  'Ubranie',
   'Biżuteria i akcesoria',
   'Światło',
   'Obserwacja',
@@ -23,26 +21,6 @@ export const EQUIPMENT_CATEGORIES = [
 ] as const
 
 export const EQUIPMENT_CATALOG: EquipmentItem[] = [
-  // === Transport ===
-  { id: 'ford_model_t', name: 'Ford Model T (1920)', category: 'Transport', price: '260 $', era: ['classic_1920s'] },
-  { id: 'chevrolet_490', name: 'Chevrolet 490 (1922)', category: 'Transport', price: '525 $', era: ['classic_1920s'] },
-  { id: 'dodge_touring', name: 'Dodge Brothers Touring (1923)', category: 'Transport', price: '1000 $', era: ['classic_1920s'] },
-  { id: 'buick_master_six', name: 'Buick Master Six (1925)', category: 'Transport', price: '1500 $', era: ['classic_1920s'] },
-  { id: 'packard_six', name: 'Packard Six (1928)', category: 'Transport', price: '2500 $', era: ['classic_1920s'] },
-  { id: 'cadillac_v8', name: 'Cadillac V-8 (1927)', category: 'Transport', price: '3350 $', era: ['classic_1920s'] },
-  { id: 'lincoln_model_l', name: 'Lincoln Model L (1924)', category: 'Transport', price: '4600 $', era: ['classic_1920s'] },
-  { id: 'motocykl_indian', name: 'Motocykl Indian Scout (1926)', category: 'Transport', price: '275 $', era: ['classic_1920s'] },
-  { id: 'rower_transport', name: 'Rower', category: 'Transport', price: '30 $' },
-  { id: 'kon_z_siodlem', name: 'Koń z siodłem', category: 'Transport', price: '150 $', era: ['classic_1920s', 'gaslight'] },
-  { id: 'powoz', name: 'Powóz', category: 'Transport', price: '200 $', era: ['gaslight'] },
-
-  // === Ubranie ===
-  { id: 'ubranie_kiepskie', name: 'Ubranie kiepskiej jakości', category: 'Ubranie', price: '0 $', description: 'Zniszczone, łatane ubranie' },
-  { id: 'ubranie_przecietne', name: 'Ubranie przeciętne', category: 'Ubranie', price: '15 $', description: 'Typowe ubranie robotnika lub urzędnika' },
-  { id: 'ubranie_dobre', name: 'Ubranie dobrej jakości', category: 'Ubranie', price: '50 $', description: 'Dobrze skrojone, solidne materiały' },
-  { id: 'ubranie_znakomite', name: 'Ubranie znakomitej jakości', category: 'Ubranie', price: '150 $', description: 'Szycie na miarę, najlepsze tkaniny' },
-  { id: 'garnitur_wieczorowy', name: 'Garnitur wieczorowy / suknia wieczorowa', category: 'Ubranie', price: '75 $', description: 'Strój na oficjalne okazje' },
-
   // === Biżuteria i akcesoria ===
   { id: 'zegarek_kieszk_prosty', name: 'Zegarek kieszonkowy (prosty)', category: 'Biżuteria i akcesoria', price: '5 $', era: ['classic_1920s', 'gaslight'] },
   { id: 'zegarek_kieszk_srebrny', name: 'Zegarek kieszonkowy (srebrny)', category: 'Biżuteria i akcesoria', price: '25 $', era: ['classic_1920s', 'gaslight'] },

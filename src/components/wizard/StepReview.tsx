@@ -6,7 +6,7 @@ import { useCharacterSubmit } from '@/hooks/useCharacterSubmit'
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
 import { OCCUPATIONS } from '@/data/occupations'
 import { getSkillById, getSkillDisplayName } from '@/data/skills'
-import { getWealthBracket } from '@/data/eras'
+import { getWealthBracket, LIFESTYLE_LEVELS, WEALTH_FORMS } from '@/data/eras'
 import { ERA_LABELS, METHOD_LABELS, type CharacteristicKey } from '@/types/common'
 import type { Characteristics } from '@/types/character'
 import { halfValue, fifthValue } from '@/lib/utils'
@@ -149,16 +149,20 @@ export function StepReview() {
           const bracket = era ? getWealthBracket(era, creditRating) : null
           const housing = bracket?.housingOptions.find((h) => h.id === store.housingId)
           const clothing = bracket?.clothingOptions.find((c) => c.id === store.clothingId)
+          const transport = bracket?.transportOptions.find((t) => t.id === store.transportId)
+          const lifestyle = era ? LIFESTYLE_LEVELS[era].find((l) => l.id === store.lifestyleId) : null
+          const wealthForm = era ? WEALTH_FORMS[era].find((f) => f.id === store.wealthFormId) : null
           return (
             <>
               <div className="grid grid-cols-2 gap-2 text-sm mb-2">
                 <Field label="Mieszkanie" value={housing?.label ?? '—'} />
                 <Field label="Ubranie" value={clothing?.label ?? '—'} />
+                <Field label="Transport" value={transport?.label ?? '—'} />
+                <Field label="Styl życia" value={lifestyle?.label ?? '—'} />
               </div>
               <div className="flex flex-wrap gap-2 mb-2">
                 <Badge>Gotówka: {store.cash}</Badge>
-                {store.bankSavings > 0 && <Badge>Bank: {store.bankSavings}</Badge>}
-                {store.investments > 0 && <Badge>Inwestycje: {store.investments}</Badge>}
+                {wealthForm && <Badge>Majątek: {wealthForm.label}</Badge>}
                 <Badge>Poziom życia: {store.spendingLevel}</Badge>
               </div>
             </>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { WizardState } from '@/stores/characterStore'
-import { getWealthBracket, formatCurrency } from '@/data/eras'
+import { getWealthBracket, formatCurrency, LIFESTYLE_LEVELS, WEALTH_FORMS } from '@/data/eras'
 import { getSkillById } from '@/data/skills'
 import type { Era } from '@/types/common'
 
@@ -38,11 +38,14 @@ export function useCharacterSubmit(): UseCharacterSubmitReturn {
       const bracket = getWealthBracket(era, creditRating)
       const housing = bracket.housingOptions.find((h) => h.id === state.housingId)
       const clothing = bracket.clothingOptions.find((c) => c.id === state.clothingId)
+      const transport = bracket.transportOptions.find((t) => t.id === state.transportId)
+      const lifestyle = LIFESTYLE_LEVELS[era].find((l) => l.id === state.lifestyleId)
+
+      const wealthForm = WEALTH_FORMS[era].find((f) => f.id === state.wealthFormId)
 
       const cashDisplay = [
         `Gotówka: ${formatCurrency(era, state.cashOnHand)}`,
-        state.bankSavings > 0 ? `Bank: ${formatCurrency(era, state.bankSavings)}` : '',
-        state.investments > 0 ? `Inwestycje: ${formatCurrency(era, state.investments)}` : '',
+        wealthForm ? `Majątek: ${wealthForm.label}` : '',
       ].filter(Boolean).join(' | ')
 
       const assetsDisplay = formatCurrency(era, bracket.assetsNumeric)
@@ -65,6 +68,8 @@ export function useCharacterSubmit(): UseCharacterSubmitReturn {
         equipment: [
           ...(housing ? [`[Mieszkanie] ${housing.label}`] : []),
           ...(clothing ? [`[Ubranie] ${clothing.label}`] : []),
+          ...(transport ? [`[Transport] ${transport.label}`] : []),
+          ...(lifestyle ? [`[Styl życia] ${lifestyle.label}`] : []),
           ...state.equipment,
           ...state.customItems,
         ],

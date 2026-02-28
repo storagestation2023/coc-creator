@@ -40,19 +40,19 @@ export function StepCharacteristics() {
       newChars[c.key] = rollCharacteristic(c.rollFormula)
     }
     setChars(newChars)
+    store.setCharacteristics(newChars)
     setRolled(true)
-  }, [isLocked])
+  }, [isLocked, store])
 
   const handleSwap = () => {
     if (!swapFrom || !swapTo || swapFrom === swapTo || swapDone) return
     const valA = chars[swapFrom]
     const valB = chars[swapTo]
     if (valA === undefined || valB === undefined) return
-    setChars((prev) => ({
-      ...prev,
-      [swapFrom]: valB,
-      [swapTo]: valA,
-    }))
+    const swapped = { ...chars, [swapFrom]: valB, [swapTo]: valA }
+    setChars(swapped)
+    store.setCharacteristics(swapped)
+    useCharacterStore.setState({ characteristicSwap: { from: swapFrom as CharacteristicKey, to: swapTo as CharacteristicKey } })
     setSwapDone(true)
   }
 
