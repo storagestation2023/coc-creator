@@ -57,9 +57,6 @@ export function StepEquipment() {
   const remainingAssets = Math.max(0, assetsAfterHL - transportCost)
   const remainingCash = Math.max(0, baseCash - housingCostCash - lifestyleCostCash)
 
-  const cashOnHand = remainingCash
-  const wealthFormAmount = remainingAssets
-
   // Equipment
   const [selectedItems, setSelectedItems] = useState<string[]>(store.equipment)
   const [customItems, setCustomItems] = useState<string[]>(store.customItems)
@@ -70,7 +67,7 @@ export function StepEquipment() {
   const equipmentByCategory = useMemo(() => getEquipmentByCategory(era), [era])
   const weapons = useMemo(() => getWeaponsForEra(era), [era])
 
-  // Equipment spending — ALL items cost cash
+  // Equipment spending — first from assets, then from cash
   const totalSpent = useMemo(() => {
     let sum = 0
     for (const category of Object.values(equipmentByCategory)) {
@@ -84,7 +81,12 @@ export function StepEquipment() {
     return sum
   }, [selectedItems, equipmentByCategory])
 
-  const overBudget = totalSpent > cashOnHand
+  const totalBudget = remainingAssets + remainingCash
+  const spentFromAssets = Math.min(totalSpent, remainingAssets)
+  const spentFromCash = Math.max(0, totalSpent - remainingAssets)
+  const wealthFormAmount = Math.max(0, remainingAssets - spentFromAssets)
+  const cashOnHand = Math.max(0, remainingCash - spentFromCash)
+  const overBudget = totalSpent > totalBudget
 
   const toggleWealthForm = (id: string) => {
     setWealthFormIds((prev) =>
@@ -122,7 +124,7 @@ export function StepEquipment() {
       wealthFormIds,
       cashOnHand,
       cash: formatCurrency(era, cashOnHand),
-      assets: formatCurrency(era, baseAssets),
+      assets: formatCurrency(era, wealthFormAmount),
       spendingLevel: selectedLifestyle.label,
     })
     store.nextStep()
@@ -158,12 +160,18 @@ export function StepEquipment() {
           <div className="flex justify-between">
             <span className="text-coc-text-muted">Ekwipunek:</span>
             <Badge variant={overBudget ? 'danger' : 'success'}>
-              {curr(totalSpent)} / {curr(cashOnHand)}
+              {curr(totalSpent)} / {curr(totalBudget)}
             </Badge>
           </div>
         </div>
+        {totalSpent > 0 && (
+          <p className="text-xs text-coc-text-muted mt-1">
+            Z dobytku: {curr(spentFromAssets)}
+            {spentFromCash > 0 && <> | Z gotówki: {curr(spentFromCash)}</>}
+          </p>
+        )}
         {overBudget && (
-          <p className="text-xs text-red-400 mt-1">Przekroczono budżet gotówkowy na ekwipunek!</p>
+          <p className="text-xs text-red-400 mt-1">Przekroczono budżet!</p>
         )}
       </div>
 
@@ -368,7 +376,7 @@ export function StepEquipment() {
         <div className="flex items-center gap-2">
           <Wallet className="w-4 h-4 text-coc-accent-light" />
           <div>
-            <div className="text-xs text-coc-text-muted">Gotówka na ręce (budżet na ekwipunek)</div>
+            <div className="text-xs text-coc-text-muted">Gotówka na ręce (po zakupach)</div>
             <div className="font-mono font-bold">{curr(cashOnHand)}</div>
           </div>
         </div>
@@ -379,7 +387,7 @@ export function StepEquipment() {
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-medium">Ekwipunek</h4>
           <Badge variant={overBudget ? 'danger' : 'success'}>
-            Wydano: {curr(totalSpent)} / {curr(cashOnHand)}
+            Wydano: {curr(totalSpent)} / {curr(totalBudget)}
             {overBudget && ' — Przekroczono!'}
           </Badge>
         </div>
