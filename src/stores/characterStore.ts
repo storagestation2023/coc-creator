@@ -237,6 +237,30 @@ export const useCharacterStore = create<WizardState>()(
     }),
     {
       name: 'coc-character-wizard',
+      version: 2,
+      migrate: (persisted, version) => {
+        // Version 0/1 → 2: combat skills restructured (composite keys),
+        // wealth system reworked, clothingId removed.
+        // Reset character data but keep invite code info.
+        if (version < 2) {
+          const old = persisted as Record<string, unknown>
+          return {
+            ...initialState,
+            inviteCodeId: old.inviteCodeId ?? null,
+            inviteCode: old.inviteCode ?? null,
+            methods: old.methods ?? [],
+            method: old.method ?? null,
+            era: old.era ?? null,
+            perks: old.perks ?? [],
+            maxTries: old.maxTries ?? 1,
+            timesUsed: old.timesUsed ?? 0,
+            maxSkillValue: old.maxSkillValue ?? 80,
+            currentStep: 1,
+            savedStep: 0,
+          }
+        }
+        return persisted as WizardState
+      },
     }
   )
 )
