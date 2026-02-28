@@ -586,6 +586,9 @@ export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8
     const p1 = pages[0]
     const p2 = pages.length > 1 ? pages[1] : null
 
+    // DEBUG: visible marker to confirm code version
+    p1.drawText('=== PDF v7 ===', { x: 50, y: 830, size: 12, font: fontBold })
+
     fillPersonalInfo(p1, font, char)
     fillCharacteristics(p1, font, fontBold, char, derived)
     fillDerived(p1, font, fontBold, char, derived)
