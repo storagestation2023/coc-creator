@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { WizardState } from '@/stores/characterStore'
-import { getWealthBracket, formatCurrency, LIFESTYLE_LEVELS, WEALTH_FORMS } from '@/data/eras'
+import { getWealthBracket, calculateWealth, formatCurrency, WEALTH_FORMS } from '@/data/eras'
 import { getSkillById } from '@/data/skills'
 import type { Era } from '@/types/common'
 
@@ -36,19 +36,19 @@ export function useCharacterSubmit(): UseCharacterSubmitReturn {
       const creditRating = (state.occupationSkillPoints['majetnosc'] ?? 0) +
         (typeof getSkillById('majetnosc')?.base === 'number' ? (getSkillById('majetnosc')?.base as number) : 0)
       const bracket = getWealthBracket(era, creditRating)
+      const wealth = calculateWealth(era, creditRating)
       const housing = bracket.housingOptions.find((h) => h.id === state.housingId)
-      const clothing = bracket.clothingOptions.find((c) => c.id === state.clothingId)
       const transport = bracket.transportOptions.find((t) => t.id === state.transportId)
-      const lifestyle = LIFESTYLE_LEVELS[era].find((l) => l.id === state.lifestyleId)
+      const lifestyle = bracket.lifestyleOptions.find((l) => l.id === state.lifestyleId)
 
-      const wealthForm = WEALTH_FORMS[era].find((f) => f.id === state.wealthFormId)
+      const selectedForms = WEALTH_FORMS[era].filter((f) => state.wealthFormIds.includes(f.id))
 
       const cashDisplay = [
         `Gotówka: ${formatCurrency(era, state.cashOnHand)}`,
-        wealthForm ? `Majątek: ${wealthForm.label}` : '',
+        selectedForms.length > 0 ? `Dobytek: ${selectedForms.map((f) => f.label).join(', ')}` : '',
       ].filter(Boolean).join(' | ')
 
-      const assetsDisplay = formatCurrency(era, bracket.assetsNumeric)
+      const assetsDisplay = formatCurrency(era, wealth.assets)
 
       // Insert the new character
       const { error: insertError } = await supabase.from('characters').insert({
@@ -67,7 +67,6 @@ export function useCharacterSubmit(): UseCharacterSubmitReturn {
         backstory: state.backstory,
         equipment: [
           ...(housing ? [`[Mieszkanie] ${housing.label}`] : []),
-          ...(clothing ? [`[Ubranie] ${clothing.label}`] : []),
           ...(transport ? [`[Transport] ${transport.label}`] : []),
           ...(lifestyle ? [`[Styl życia] ${lifestyle.label}`] : []),
           ...state.equipment,

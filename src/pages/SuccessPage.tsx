@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CheckCircle, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { getSkillById } from '@/data/skills'
+import { getSkillDisplayName, getSkillBase } from '@/data/skills'
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
 import { OCCUPATIONS } from '@/data/occupations'
 import { ERA_LABELS, METHOD_LABELS, type CharacteristicKey } from '@/types/common'
@@ -106,11 +106,10 @@ function CharacterSummary({ character: char }: { character: CharacterRecord }) {
   }
 
   const getBase = (skillId: string) => {
-    const skill = getSkillById(skillId)
-    if (!skill) return 0
-    if (skill.base === 'half_dex') return Math.floor((char.characteristics['DEX'] ?? 0) / 2)
-    if (skill.base === 'edu') return char.characteristics['EDU'] ?? 0
-    return skill.base
+    const base = getSkillBase(skillId)
+    if (base === 'half_dex') return Math.floor((char.characteristics['DEX'] ?? 0) / 2)
+    if (base === 'edu') return char.characteristics['EDU'] ?? 0
+    return base
   }
 
   return (
@@ -170,17 +169,12 @@ function CharacterSummary({ character: char }: { character: CharacterRecord }) {
         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm max-h-[250px] overflow-y-auto">
           {Object.entries(allSkillPoints)
             .filter(([, pts]) => pts > 0)
-            .sort(([a], [b]) => {
-              const sA = getSkillById(a)
-              const sB = getSkillById(b)
-              return (sA?.name ?? a).localeCompare(sB?.name ?? b, 'pl')
-            })
+            .sort(([a], [b]) => getSkillDisplayName(a).localeCompare(getSkillDisplayName(b), 'pl'))
             .map(([skillId, pts]) => {
-              const skill = getSkillById(skillId)
               const base = getBase(skillId)
               return (
                 <div key={skillId} className="flex justify-between py-0.5">
-                  <span className="text-coc-text-muted truncate">{skill?.name ?? skillId}</span>
+                  <span className="text-coc-text-muted truncate">{getSkillDisplayName(skillId)}</span>
                   <span className="font-mono font-bold ml-2">{base + pts}%</span>
                 </div>
               )
@@ -222,7 +216,7 @@ function CharacterSummary({ character: char }: { character: CharacterRecord }) {
           <h4 className="text-sm font-medium text-coc-text-muted uppercase tracking-wider mb-2">Ekwipunek</h4>
           <div className="flex flex-wrap gap-2 mb-2">
             {char.cash && <Badge>Gotówka: {char.cash}</Badge>}
-            {char.assets && <Badge>Majątek: {char.assets}</Badge>}
+            {char.assets && <Badge>Dobytek: {char.assets}</Badge>}
             {char.spending_level && <Badge>Poziom życia: {char.spending_level}</Badge>}
           </div>
           <ul className="text-sm space-y-0.5">

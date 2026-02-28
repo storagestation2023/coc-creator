@@ -93,7 +93,7 @@ export const PL = {
   equipment: 'Ekwipunek',
   spending_level: 'Poziom życia',
   cash: 'Gotówka',
-  assets: 'Majątek',
+  assets: 'Dobytek',
   add_item: 'Dodaj przedmiot',
   custom_item: 'Własny przedmiot',
   budget_remaining: 'Pozostały budżet',

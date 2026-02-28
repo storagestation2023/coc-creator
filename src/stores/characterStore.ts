@@ -62,10 +62,9 @@ export interface WizardState {
   equipment: string[]
   customItems: string[]
   housingId: string
-  clothingId: string
   transportId: string
   lifestyleId: string
-  wealthFormId: string
+  wealthFormIds: string[]
   cashOnHand: number
   // Display strings (kept for DB backward compatibility)
   cash: string
@@ -95,8 +94,8 @@ export interface WizardState {
   setEquipment: (equipment: string[]) => void
   setCustomItems: (items: string[]) => void
   setLifestyle: (data: {
-    housingId: string; clothingId: string; transportId: string; lifestyleId: string;
-    wealthFormId: string; cashOnHand: number;
+    housingId: string; transportId: string; lifestyleId: string;
+    wealthFormIds: string[]; cashOnHand: number;
     cash: string; assets: string; spendingLevel: string
   }) => void
   /** Update server-side invite code data without resetting character progress */
@@ -128,10 +127,9 @@ const characterDataDefaults = {
   equipment: [],
   customItems: [],
   housingId: '',
-  clothingId: '',
   transportId: '',
   lifestyleId: '',
-  wealthFormId: '',
+  wealthFormIds: [],
   cashOnHand: 0,
   cash: '',
   assets: '',
@@ -212,9 +210,9 @@ export const useCharacterStore = create<WizardState>()(
       setCustomItems: (items) => set({ customItems: items }),
       setLifestyle: (data) =>
         set({
-          housingId: data.housingId, clothingId: data.clothingId,
+          housingId: data.housingId,
           transportId: data.transportId, lifestyleId: data.lifestyleId,
-          wealthFormId: data.wealthFormId, cashOnHand: data.cashOnHand,
+          wealthFormIds: data.wealthFormIds, cashOnHand: data.cashOnHand,
           cash: data.cash, assets: data.assets, spendingLevel: data.spendingLevel,
         }),
 

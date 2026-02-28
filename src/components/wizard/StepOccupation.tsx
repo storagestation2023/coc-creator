@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react'
 import { Search, ChevronDown, ChevronRight } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { OCCUPATIONS, OCCUPATION_CATEGORIES, getOccupationsForEra } from '@/data/occupations'
-import { getSkillById } from '@/data/skills'
+import { getSkillDisplayName } from '@/data/skills'
+import { parseSkillSlot } from '@/data/occupations'
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
 import { calculateOccupationPoints } from '@/hooks/useSkillPoints'
 import type { Occupation } from '@/types/occupation'
@@ -34,12 +35,11 @@ export function StepOccupation() {
         const descMatch = occ.description?.toLowerCase().includes(term)
         const skillMatch = occ.skills.some((sid) => {
           if (sid === 'any' || sid === 'any_academic') return false
-          if (sid.startsWith('choice:')) {
-            const opts = sid.split(':')[2]?.split(',') ?? []
-            return opts.some((id) => getSkillById(id)?.name.toLowerCase().includes(term))
+          const parsed = parseSkillSlot(sid)
+          if (parsed.type === 'choice') {
+            return parsed.choice.options.some((id) => getSkillDisplayName(id).toLowerCase().includes(term))
           }
-          const skill = getSkillById(sid)
-          return skill?.name.toLowerCase().includes(term)
+          return getSkillDisplayName(sid).toLowerCase().includes(term)
         })
         const score = nameMatch ? 3 : descMatch ? 2 : skillMatch ? 1 : 0
         return { occ, score }
@@ -107,13 +107,12 @@ export function StepOccupation() {
           {occ.skills.map((sid) => {
             if (sid === 'any') return 'Dowolna'
             if (sid === 'any_academic') return 'Dowolna (akad.)'
-            if (sid.startsWith('choice:')) {
-              const opts = sid.split(':')[2]?.split(',') ?? []
-              const names = opts.map((id) => getSkillById(id)?.name ?? id)
+            const parsed = parseSkillSlot(sid)
+            if (parsed.type === 'choice') {
+              const names = parsed.choice.options.map((id) => getSkillDisplayName(id))
               return `[${names.join('/')}]`
             }
-            const skill = getSkillById(sid)
-            return skill?.name ?? sid
+            return getSkillDisplayName(sid)
           }).join(', ')}
         </div>
       </button>
@@ -197,10 +196,19 @@ export function StepOccupation() {
             <span className="text-xs text-coc-text-muted">Umiejętności zawodowe:</span>
             <div className="flex flex-wrap gap-1 mt-1">
               {selected.skills.map((sid, i) => {
-                const skill = getSkillById(sid)
-                const label = sid === 'any' ? 'Dowolna' : sid === 'any_academic' ? 'Dowolna (akademicka)' : skill?.name ?? sid
+                let label: string
+                if (sid === 'any') label = 'Dowolna'
+                else if (sid === 'any_academic') label = 'Dowolna (akademicka)'
+                else if (sid.startsWith('choice:')) {
+                  const parsed = parseSkillSlot(sid)
+                  label = parsed.type === 'choice'
+                    ? parsed.choice.options.map((id) => getSkillDisplayName(id)).join(' / ')
+                    : sid
+                } else {
+                  label = getSkillDisplayName(sid)
+                }
                 return (
-                  <Badge key={i} variant={sid.startsWith('any') ? 'warning' : 'default'}>
+                  <Badge key={i} variant={sid.startsWith('any') ? 'warning' : sid.startsWith('choice:') ? 'default' : 'default'}>
                     {label}
                   </Badge>
                 )

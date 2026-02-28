@@ -10,6 +10,7 @@ interface SkillRowProps {
 }
 
 export function SkillRow({ name, baseValue, addedPoints, onPointsChange, maxAdd = 99, disabled }: SkillRowProps) {
+  const effectiveMaxAdd = Math.max(0, maxAdd)
   const total = baseValue + addedPoints
 
   return (
@@ -48,7 +49,7 @@ export function SkillRow({ name, baseValue, addedPoints, onPointsChange, maxAdd 
           <button
             type="button"
             onClick={() => onPointsChange(1)}
-            disabled={disabled || addedPoints >= maxAdd || total >= 99}
+            disabled={disabled || addedPoints >= effectiveMaxAdd}
             className="p-0.5 rounded hover:bg-coc-border disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
             title="+1"
           >
@@ -57,7 +58,7 @@ export function SkillRow({ name, baseValue, addedPoints, onPointsChange, maxAdd 
           <button
             type="button"
             onClick={() => onPointsChange(5)}
-            disabled={disabled || addedPoints + 5 > maxAdd || total + 5 > 99}
+            disabled={disabled || addedPoints + 5 > effectiveMaxAdd}
             className="p-0.5 rounded hover:bg-coc-border disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
             title="+5"
           >

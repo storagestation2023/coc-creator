@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { OCCUPATIONS, parseSkillSlot, isSpecialSlot } from '@/data/occupations'
-import { getSkillById, getSkillsForEra, getSkillDisplayName } from '@/data/skills'
-import { getWealthBracket } from '@/data/eras'
+import { getSkillById, getSkillsForEra, getSkillDisplayName, getSkillBase } from '@/data/skills'
+import { getWealthBracket, calculateWealth, formatCurrency } from '@/data/eras'
 import { useSkillPoints } from '@/hooks/useSkillPoints'
 import type { Characteristics } from '@/types/character'
 import type { Era } from '@/types/common'
@@ -11,12 +11,17 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { SkillRow } from '@/components/shared/SkillRow'
 
+interface SkillOption {
+  key: string
+  displayName: string
+  base: number | 'half_dex' | 'edu'
+}
+
 function getBaseValue(skillId: string, chars: Partial<Characteristics>): number {
-  const skill = getSkillById(skillId)
-  if (!skill) return 0
-  if (skill.base === 'half_dex') return Math.floor((chars.DEX ?? 0) / 2)
-  if (skill.base === 'edu') return chars.EDU ?? 0
-  return skill.base
+  const base = getSkillBase(skillId)
+  if (base === 'half_dex') return Math.floor((chars.DEX ?? 0) / 2)
+  if (base === 'edu') return chars.EDU ?? 0
+  return base
 }
 
 export function StepOccupationSkills() {
@@ -86,13 +91,39 @@ export function StepOccupationSkills() {
   // Credit rating points (part of occupation points)
   const [creditRatingPoints, setCreditRatingPoints] = useState(skillPoints['majetnosc'] ?? 0)
 
-  const availableSkills = useMemo(() => {
-    return getSkillsForEra(era).filter((s) => s.id !== 'mity_cthulhu')
+  // Expanded skill list for "any" dropdowns — includes combat specializations as individual entries
+  const expandedAvailableSkills = useMemo(() => {
+    const eraSkills = getSkillsForEra(era).filter((s) => s.id !== 'mity_cthulhu')
+    const options: SkillOption[] = []
+
+    for (const skill of eraSkills) {
+      if (skill.combatSpecializations) {
+        for (const spec of skill.combatSpecializations) {
+          if (spec.era && !spec.era.includes(era)) continue
+          options.push({
+            key: `${skill.id}:${spec.id}`,
+            displayName: `${skill.name} (${spec.name})`,
+            base: spec.base,
+          })
+        }
+      } else {
+        options.push({
+          key: skill.id,
+          displayName: skill.name,
+          base: skill.base,
+        })
+      }
+    }
+
+    return options.sort((a, b) => a.displayName.localeCompare(b.displayName, 'pl'))
   }, [era])
 
-  const academicSkills = useMemo(
-    () => availableSkills.filter((s) => s.category === 'academic'),
-    [availableSkills]
+  const academicSkillOptions = useMemo(
+    () => expandedAvailableSkills.filter((o) => {
+      const skill = getSkillById(o.key)
+      return skill?.category === 'academic'
+    }),
+    [expandedAvailableSkills]
   )
 
   if (!occupation) {
@@ -147,6 +178,12 @@ export function StepOccupationSkills() {
     store.nextStep()
   }
 
+  const formatBase = (base: number | 'half_dex' | 'edu'): string => {
+    if (base === 'half_dex') return '½ZRĘ'
+    if (base === 'edu') return 'WYK'
+    return String(base)
+  }
+
   const renderSlot = (sid: string, i: number) => {
     const parsed = parseSkillSlot(sid)
 
@@ -188,13 +225,30 @@ export function StepOccupationSkills() {
 
       // Open or limited specialization - show dropdown
       const chosenCompositeKey = chosenSlotSkills[i]
-      const specOptions = parsed.options ?? skill.specializations ?? []
+
+      // For combat specializations, use combatSpec IDs; for regular, use specialization names
+      let specOptions: { value: string; label: string }[] = []
+      if (skill.combatSpecializations) {
+        const filteredSpecs = parsed.options
+          ? skill.combatSpecializations.filter((cs) => parsed.options!.includes(cs.id))
+          : skill.combatSpecializations.filter((cs) => !cs.era || cs.era.includes(era))
+        specOptions = filteredSpecs.map((cs) => ({
+          value: `${parsed.id}:${cs.id}`,
+          label: cs.name,
+        }))
+      } else {
+        const rawOptions = parsed.options ?? skill.specializations ?? []
+        specOptions = rawOptions.map((spec) => ({
+          value: `${parsed.id}:${spec}`,
+          label: spec,
+        }))
+      }
+
       const chosenValues = Object.values(chosenSlotSkills)
       const isCustom = chosenCompositeKey === `${parsed.id}:__custom__` || (customSpecTexts[i] !== undefined && chosenCompositeKey?.startsWith(`${parsed.id}:`))
 
       const handleSpecChange = (value: string) => {
         if (value === '__custom__') {
-          // Switch to custom input mode
           const oldKey = chosenSlotSkills[i]
           if (oldKey && skillPoints[oldKey]) {
             const newPoints = { ...skillPoints }
@@ -204,7 +258,6 @@ export function StepOccupationSkills() {
           setCustomSpecTexts((prev) => ({ ...prev, [i]: '' }))
           setChosenSlotSkills((prev) => ({ ...prev, [i]: `${parsed.id}:__custom__` }))
         } else {
-          // Remove custom text state
           setCustomSpecTexts((prev) => {
             const next = { ...prev }
             delete next[i]
@@ -218,7 +271,6 @@ export function StepOccupationSkills() {
         const text = customSpecTexts[i]?.trim()
         if (text) {
           const compositeKey = `${parsed.id}:${text}`
-          // Remove points from old key
           const oldKey = chosenSlotSkills[i]
           if (oldKey && oldKey !== compositeKey && skillPoints[oldKey]) {
             const newPoints = { ...skillPoints }
@@ -229,7 +281,6 @@ export function StepOccupationSkills() {
         }
       }
 
-      // Determine current select value
       let selectValue = ''
       if (chosenCompositeKey) {
         if (customSpecTexts[i] !== undefined) {
@@ -253,17 +304,16 @@ export function StepOccupationSkills() {
               className="flex-1 px-2 py-1 text-sm bg-coc-surface-light border border-coc-border rounded text-coc-text cursor-pointer"
             >
               <option value="">— Wybierz specjalizację —</option>
-              {specOptions.map((spec) => {
-                const compKey = `${parsed.id}:${spec}`
-                const alreadyUsed = chosenValues.includes(compKey) && chosenSlotSkills[i] !== compKey
+              {specOptions.map((opt) => {
+                const alreadyUsed = chosenValues.includes(opt.value) && chosenSlotSkills[i] !== opt.value
                 if (alreadyUsed) return null
                 return (
-                  <option key={spec} value={compKey}>
-                    {spec}
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
                   </option>
                 )
               })}
-              {!parsed.options && (
+              {!parsed.options && !skill.combatSpecializations && (
                 <option value="__custom__">Inne...</option>
               )}
             </select>
@@ -297,30 +347,62 @@ export function StepOccupationSkills() {
 
     // 'any', 'any_academic', or 'choice' slot
     const chosenId = chosenSlotSkills[i]
-    let pool: typeof availableSkills
+
+    if (parsed.type === 'choice') {
+      // Choice options may be composite keys (e.g., bron_palna:krotka) — use them directly
+      const optionDisplayNames = parsed.choice.options.map((k) => getSkillDisplayName(k))
+      const label = `Wybierz z: ${optionDisplayNames.join(', ')}`
+
+      return (
+        <div key={`slot-${i}`} className="py-1.5 px-2 rounded bg-coc-surface-light/30">
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant="default">Wybór</Badge>
+            <select
+              value={chosenId ?? ''}
+              onChange={(e) => handleChooseSlotSkill(i, e.target.value)}
+              className="flex-1 px-2 py-1 text-sm bg-coc-surface-light border border-coc-border rounded text-coc-text cursor-pointer"
+            >
+              <option value="">— Wybierz umiejętność —</option>
+              {parsed.choice.options
+                .filter((k) => !usedIds.has(k) || k === chosenId)
+                .map((k) => (
+                  <option key={k} value={k}>
+                    {getSkillDisplayName(k)} ({formatBase(getSkillBase(k))}%)
+                  </option>
+                ))
+              }
+            </select>
+          </div>
+          <p className="text-xs text-coc-text-muted px-1 mb-1">{label}</p>
+          {chosenId && (
+            <SkillRow
+              name={getSkillDisplayName(chosenId)}
+              baseValue={getBaseValue(chosenId, chars)}
+              addedPoints={skillPoints[chosenId] ?? 0}
+              onPointsChange={(d) => handlePointChange(chosenId, d)}
+              maxAdd={maxSkillValue - getBaseValue(chosenId, chars)}
+            />
+          )}
+        </div>
+      )
+    }
+
+    // any / any_academic — use expanded skill list with combat specs
+    let pool: SkillOption[]
     let label: string
 
     if (parsed.type === 'any') {
-      pool = availableSkills
+      pool = expandedAvailableSkills
       label = 'Dowolna'
-    } else if (parsed.type === 'any_academic') {
-      pool = academicSkills
-      label = 'Dowolna (akademicka)'
     } else {
-      // choice slot - filter to only the allowed options
-      pool = parsed.choice.options
-        .map((id) => getSkillById(id))
-        .filter((s): s is NonNullable<typeof s> => s !== undefined)
-      const optionNames = pool.map((s) => s.name).join(', ')
-      label = `Wybierz z: ${optionNames}`
+      pool = academicSkillOptions
+      label = 'Dowolna (akademicka)'
     }
 
     return (
       <div key={`slot-${i}`} className="py-1.5 px-2 rounded bg-coc-surface-light/30">
         <div className="flex items-center gap-2 mb-1">
-          <Badge variant={parsed.type === 'choice' ? 'default' : 'warning'}>
-            {parsed.type === 'choice' ? 'Wybór' : label}
-          </Badge>
+          <Badge variant="warning">{label}</Badge>
           <select
             value={chosenId ?? ''}
             onChange={(e) => handleChooseSlotSkill(i, e.target.value)}
@@ -328,21 +410,18 @@ export function StepOccupationSkills() {
           >
             <option value="">— Wybierz umiejętność —</option>
             {pool
-              .filter((s) => !usedIds.has(s.id) || s.id === chosenId)
-              .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({typeof s.base === 'number' ? s.base : s.base === 'half_dex' ? '½ZRĘ' : 'WYK'}%)
+              .filter((o) => !usedIds.has(o.key) || o.key === chosenId)
+              .map((o) => (
+                <option key={o.key} value={o.key}>
+                  {o.displayName} ({formatBase(o.base)}%)
                 </option>
               ))
             }
           </select>
         </div>
-        {parsed.type === 'choice' && (
-          <p className="text-xs text-coc-text-muted px-1 mb-1">{label}</p>
-        )}
         {chosenId && (
           <SkillRow
-            name={getSkillById(chosenId)?.name ?? chosenId}
+            name={getSkillDisplayName(chosenId)}
             baseValue={getBaseValue(chosenId, chars)}
             addedPoints={skillPoints[chosenId] ?? 0}
             onPointsChange={(d) => handlePointChange(chosenId, d)}
@@ -381,6 +460,7 @@ export function StepOccupationSkills() {
             baseValue={creditRatingBase}
             addedPoints={creditRatingPoints}
             onPointsChange={(d) => handlePointChange('majetnosc', d)}
+            maxAdd={occupation.credit_rating.max - creditRatingBase}
           />
           {!creditRatingValid && (
             <p className="text-xs text-coc-danger px-2">
@@ -389,6 +469,7 @@ export function StepOccupationSkills() {
           )}
           {creditRatingTotal > 0 && (() => {
             const bracket = getWealthBracket(era, creditRatingTotal)
+            const wealth = calculateWealth(era, creditRatingTotal)
             const housingRange = bracket.housingOptions.length > 1
               ? `${bracket.housingOptions[0].label} – ${bracket.housingOptions[bracket.housingOptions.length - 1].label}`
               : bracket.housingOptions[0]?.label ?? ''
@@ -397,7 +478,7 @@ export function StepOccupationSkills() {
               : bracket.transportOptions[0]?.label ?? ''
             return (
               <div className="mt-1.5 px-2 py-1.5 bg-coc-surface-light/50 rounded text-xs text-coc-text-muted space-y-0.5">
-                <div>Majątek: {bracket.assets} | Mieszkanie: {housingRange}</div>
+                <div>Dobytek: {formatCurrency(era, wealth.assets)} | Mieszkanie: {housingRange}</div>
                 <div>Transport: {transportRange}</div>
               </div>
             )

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { OCCUPATIONS } from '@/data/occupations'
-import { getSkillById, getSkillsForEra, getSkillDisplayName } from '@/data/skills'
+import { getSkillById, getSkillsForEra, getSkillDisplayName, getSkillBase } from '@/data/skills'
 import { useSkillPoints } from '@/hooks/useSkillPoints'
 import type { Characteristics } from '@/types/character'
 import type { Era } from '@/types/common'
@@ -11,11 +11,10 @@ import { Badge } from '@/components/ui/Badge'
 import { SkillRow } from '@/components/shared/SkillRow'
 
 function getBaseValue(skillId: string, chars: Partial<Characteristics>): number {
-  const skill = getSkillById(skillId)
-  if (!skill) return 0
-  if (skill.base === 'half_dex') return Math.floor((chars.DEX ?? 0) / 2)
-  if (skill.base === 'edu') return chars.EDU ?? 0
-  return skill.base
+  const base = getSkillBase(skillId)
+  if (base === 'half_dex') return Math.floor((chars.DEX ?? 0) / 2)
+  if (base === 'edu') return chars.EDU ?? 0
+  return base
 }
 
 interface ExpandedSkillEntry {
@@ -49,6 +48,7 @@ export function StepPersonalSkills() {
         const baseId = key.substring(0, colonIdx)
         const spec = key.substring(colonIdx + 1)
         const skill = getSkillById(baseId)
+        // Only for regular specializations (not combat) where the spec is custom
         if (skill?.specializations && !skill.specializations.includes(spec)) {
           texts[baseId] = spec
         }
@@ -68,7 +68,17 @@ export function StepPersonalSkills() {
     const entries: ExpandedSkillEntry[] = []
 
     for (const skill of eraSkills) {
-      if (skill.specializations && skill.specializations.length > 0) {
+      if (skill.combatSpecializations && skill.combatSpecializations.length > 0) {
+        // Expand combat specializations into individual entries
+        for (const spec of skill.combatSpecializations) {
+          if (spec.era && !spec.era.includes(era)) continue
+          entries.push({
+            key: `${skill.id}:${spec.id}`,
+            displayName: `${skill.name} (${spec.name})`,
+            baseSkillId: skill.id,
+          })
+        }
+      } else if (skill.specializations && skill.specializations.length > 0) {
         for (const spec of skill.specializations) {
           entries.push({
             key: `${skill.id}:${spec}`,

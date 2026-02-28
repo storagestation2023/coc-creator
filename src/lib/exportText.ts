@@ -1,6 +1,6 @@
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
 import { OCCUPATIONS } from '@/data/occupations'
-import { getSkillById } from '@/data/skills'
+import { getSkillDisplayName, getSkillBase } from '@/data/skills'
 import { ERA_LABELS, METHOD_LABELS, type CharacteristicKey } from '@/types/common'
 import { halfValue, fifthValue } from '@/lib/utils'
 
@@ -72,26 +72,20 @@ export function exportCharacterAsText(char: ExportCharacter): string {
   }
 
   const getBase = (skillId: string) => {
-    const skill = getSkillById(skillId)
-    if (!skill) return 0
-    if (skill.base === 'half_dex') return Math.floor((char.characteristics['DEX'] ?? 0) / 2)
-    if (skill.base === 'edu') return char.characteristics['EDU'] ?? 0
-    return skill.base
+    const base = getSkillBase(skillId)
+    if (base === 'half_dex') return Math.floor((char.characteristics['DEX'] ?? 0) / 2)
+    if (base === 'edu') return char.characteristics['EDU'] ?? 0
+    return base
   }
 
   const skillEntries = Object.entries(allSkillPoints)
     .filter(([, pts]) => pts > 0)
-    .sort(([a], [b]) => {
-      const sA = getSkillById(a)
-      const sB = getSkillById(b)
-      return (sA?.name ?? a).localeCompare(sB?.name ?? b, 'pl')
-    })
+    .sort(([a], [b]) => getSkillDisplayName(a).localeCompare(getSkillDisplayName(b), 'pl'))
 
   for (const [skillId, pts] of skillEntries) {
-    const skill = getSkillById(skillId)
     const base = getBase(skillId)
     const total = base + pts
-    const name = skill?.name ?? skillId
+    const name = getSkillDisplayName(skillId)
     lines.push(`${name.padEnd(30)} ${String(total).padStart(3)}%  (baza: ${base}, +${pts})`)
   }
   lines.push('')
@@ -123,7 +117,7 @@ export function exportCharacterAsText(char: ExportCharacter): string {
     lines.push('───── EKWIPUNEK ─────')
     if (char.spending_level) lines.push(`Poziom życia: ${char.spending_level}`)
     if (char.cash) lines.push(`Gotówka: ${char.cash}`)
-    if (char.assets) lines.push(`Majątek: ${char.assets}`)
+    if (char.assets) lines.push(`Dobytek: ${char.assets}`)
     lines.push('')
     for (const item of char.equipment) {
       lines.push(`• ${item}`)

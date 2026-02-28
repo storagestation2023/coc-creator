@@ -17,11 +17,12 @@ export function StepAgeModifiers() {
   const chars = store.characteristics as Characteristics
   const mods = useMemo(() => getAgeModifications(age), [age])
 
-  // Persist EDU rolls: if the store already has rolls, they're locked
-  const hasStoredEduRolls = store.eduRolls.length > 0
+  // Persist EDU rolls: if all required rolls are already in the store, they're locked
+  const requiredRolls = mods?.eduImprovementChecks ?? 0
+  const allEduRollsDone = store.eduRolls.length >= requiredRolls && requiredRolls > 0
   const [deductions, setDeductions] = useState<Partial<Record<CharacteristicKey, number>>>(store.ageDeductions)
   const [eduRolls, setEduRolls] = useState<{ roll: number; improved: boolean; newEdu: number }[]>(
-    hasStoredEduRolls ? store.eduRolls : []
+    store.eduRolls.length > 0 ? store.eduRolls : []
   )
   const [currentEdu, setCurrentEdu] = useState(
     store.eduAfterRolls ?? chars.EDU
@@ -43,7 +44,7 @@ export function StepAgeModifiers() {
   const noModifiers = mods.physicalDeductionTotal === 0 && mods.eduImprovementChecks <= 1 && !mods.isYoung
 
   const handleEduRoll = () => {
-    if (hasStoredEduRolls) return // Can't re-roll if already persisted
+    if (allEduRollsDone) return // Can't re-roll if all rolls already done
     const result = eduImprovementRoll(currentEdu)
     const newRolls = [...eduRolls, result]
     const newEdu = result.improved ? result.newEdu : currentEdu
@@ -141,7 +142,7 @@ export function StepAgeModifiers() {
           </h4>
           <p className="text-xs text-coc-text-muted mb-3">
             Rzuć 1K100. Jeśli wynik &gt; aktualnego WYK ({currentEdu}), dodaj 1K10 do WYK.
-            {hasStoredEduRolls && (
+            {allEduRollsDone && (
               <span className="text-coc-accent-light ml-1">Rzuty zostały już wykonane i nie można ich cofnąć.</span>
             )}
           </p>
@@ -152,7 +153,7 @@ export function StepAgeModifiers() {
             </div>
           ))}
 
-          {!eduRollsDone && !hasStoredEduRolls && !isLocked && (
+          {!eduRollsDone && !allEduRollsDone && !isLocked && (
             <Button size="sm" onClick={handleEduRoll} className="mt-2">
               Rzuć na poprawę WYK
             </Button>

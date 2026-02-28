@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react'
-import { Plus, Trash2, Search, Home, Shirt, Car, Sparkles, Wallet, Landmark } from 'lucide-react'
+import { Plus, Trash2, Search, Home, Car, Sparkles, Wallet, Landmark } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { getEquipmentByCategory } from '@/data/equipment'
 import { getWeaponsForEra, type Weapon } from '@/data/weapons'
 import {
-  getWealthBracket, formatCurrency, LIFESTYLE_LEVELS, WEALTH_FORMS,
-  type HousingOption, type ClothingOption, type TransportOption, type LifestyleLevel,
+  getWealthBracket, calculateWealth, formatCurrency, WEALTH_FORMS,
+  type HousingOption, type TransportOption, type LifestyleOption,
 } from '@/data/eras'
 import { getSkillById } from '@/data/skills'
 import type { Era } from '@/types/common'
@@ -24,37 +24,39 @@ export function StepEquipment() {
   const creditRating = (store.occupationSkillPoints['majetnosc'] ?? 0) +
     (typeof getSkillById('majetnosc')?.base === 'number' ? (getSkillById('majetnosc')?.base as number) : 0)
 
-  const wealth = getWealthBracket(era, creditRating)
-  const lifestyleLevels = LIFESTYLE_LEVELS[era]
+  const bracket = getWealthBracket(era, creditRating)
+  const wealth = calculateWealth(era, creditRating)
   const wealthForms = WEALTH_FORMS[era]
 
-  // Determine default lifestyle: highest free level for this CR
-  const defaultLifestyle = [...lifestyleLevels].reverse().find((l) => creditRating >= l.minCreditRating) ?? lifestyleLevels[0]
-
   // Lifestyle choices
-  const [housingId, setHousingId] = useState(store.housingId || wealth.housingOptions[0]?.id || '')
-  const [clothingId, setClothingId] = useState(store.clothingId || wealth.clothingOptions[0]?.id || '')
-  const [transportId, setTransportId] = useState(store.transportId || wealth.transportOptions[0]?.id || '')
-  const [lifestyleId, setLifestyleId] = useState(store.lifestyleId || defaultLifestyle.id)
-  const [wealthFormId, setWealthFormId] = useState(store.wealthFormId || wealthForms[0]?.id || '')
+  const [housingId, setHousingId] = useState(store.housingId || bracket.housingOptions[0]?.id || '')
+  const [transportId, setTransportId] = useState(store.transportId || bracket.transportOptions[0]?.id || '')
+  const [lifestyleId, setLifestyleId] = useState(store.lifestyleId || bracket.lifestyleOptions[0]?.id || '')
+  const [wealthFormIds, setWealthFormIds] = useState<string[]>(
+    store.wealthFormIds.length > 0 ? store.wealthFormIds : (wealthForms[0] ? [wealthForms[0].id] : [])
+  )
 
-  const selectedHousing = wealth.housingOptions.find((h) => h.id === housingId) ?? wealth.housingOptions[0]
-  const selectedClothing = wealth.clothingOptions.find((c) => c.id === clothingId) ?? wealth.clothingOptions[0]
-  const selectedTransport = wealth.transportOptions.find((t) => t.id === transportId) ?? wealth.transportOptions[0]
-  const selectedLifestyle = lifestyleLevels.find((l) => l.id === lifestyleId) ?? defaultLifestyle
+  const selectedHousing = bracket.housingOptions.find((h) => h.id === housingId) ?? bracket.housingOptions[0]
+  const selectedTransport = bracket.transportOptions.find((t) => t.id === transportId) ?? bracket.transportOptions[0]
+  const selectedLifestyle = bracket.lifestyleOptions.find((l) => l.id === lifestyleId) ?? bracket.lifestyleOptions[0]
 
-  // Lifestyle cost: 0 if CR >= minCR, otherwise the cost
-  const lifestyleCostValue = creditRating >= selectedLifestyle.minCreditRating ? 0 : selectedLifestyle.cost
+  // Budget calculations — percentage-based from initial values
+  const baseAssets = wealth.assets
+  const baseCash = wealth.cash
 
-  // Budget calculations
-  const totalAssets = wealth.assetsNumeric
-  const totalLifestyleCost = (selectedHousing?.cost ?? 0) + (selectedClothing?.cost ?? 0) + (selectedTransport?.cost ?? 0) + lifestyleCostValue
-  const remainingAssets = Math.max(0, totalAssets - totalLifestyleCost)
+  const housingCostAssets = baseAssets * (selectedHousing.assetReductionPct / 100)
+  const housingCostCash = baseCash * (selectedHousing.cashReductionPct / 100)
 
-  // Cash on hand = bracket's default cash amount (auto, not editable)
-  // Capped at remaining assets so we don't go negative on wealth form
-  const cashOnHand = Math.min(wealth.cashNumeric, remainingAssets)
-  const wealthFormAmount = Math.max(0, remainingAssets - cashOnHand)
+  const lifestyleCostAssets = baseAssets * (selectedLifestyle.assetReductionPct / 100)
+  const lifestyleCostCash = baseCash * (selectedLifestyle.cashReductionPct / 100)
+
+  const transportCost = selectedTransport.free ? 0 : selectedTransport.cost
+
+  const remainingAssets = Math.max(0, baseAssets - housingCostAssets - lifestyleCostAssets - transportCost)
+  const remainingCash = Math.max(0, baseCash - housingCostCash - lifestyleCostCash)
+
+  const cashOnHand = remainingCash
+  const wealthFormAmount = remainingAssets
 
   // Equipment
   const [selectedItems, setSelectedItems] = useState<string[]>(store.equipment)
@@ -86,10 +88,11 @@ export function StepEquipment() {
 
   const overBudget = totalSpent > cashOnHand
 
-  const handleHousingChange = (id: string) => setHousingId(id)
-  const handleClothingChange = (id: string) => setClothingId(id)
-  const handleTransportChange = (id: string) => setTransportId(id)
-  const handleLifestyleChange = (id: string) => setLifestyleId(id)
+  const toggleWealthForm = (id: string) => {
+    setWealthFormIds((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+    )
+  }
 
   const addItem = (itemName: string) => setSelectedItems((prev) => [...prev, itemName])
   const removeItem = (index: number) => setSelectedItems((prev) => prev.filter((_, i) => i !== index))
@@ -107,13 +110,12 @@ export function StepEquipment() {
     store.setCustomItems(customItems)
     store.setLifestyle({
       housingId,
-      clothingId,
       transportId,
       lifestyleId,
-      wealthFormId,
+      wealthFormIds,
       cashOnHand,
       cash: formatCurrency(era, cashOnHand),
-      assets: formatCurrency(era, totalAssets),
+      assets: formatCurrency(era, baseAssets),
       spendingLevel: selectedLifestyle.label,
     })
     store.nextStep()
@@ -122,18 +124,25 @@ export function StepEquipment() {
   const curr = (n: number) => formatCurrency(era, n)
 
   return (
-    <Card title="Ekwipunek i majątek">
+    <Card title="Ekwipunek i dobytek">
       {/* Section A: Wealth Summary */}
       <div className="bg-coc-accent/10 border border-coc-accent/20 rounded-lg p-3 mb-4">
-        <div className="grid grid-cols-2 gap-2 text-sm">
+        <div className="grid grid-cols-3 gap-2 text-sm">
           <div>
             <div className="text-xs text-coc-text-muted">Majętność</div>
             <div className="font-medium font-mono">{creditRating}</div>
           </div>
           <div>
-            <div className="text-xs text-coc-text-muted">Majątek łączny</div>
-            <div className="font-medium">{wealth.assets}</div>
+            <div className="text-xs text-coc-text-muted">Dobytek</div>
+            <div className="font-medium">{curr(baseAssets)}</div>
           </div>
+          <div>
+            <div className="text-xs text-coc-text-muted">Gotówka</div>
+            <div className="font-medium">{curr(baseCash)}</div>
+          </div>
+        </div>
+        <div className="text-xs text-coc-text-muted mt-1">
+          Bracket: {bracket.label} | Wydatki: {curr(wealth.spending)}/tydzień
         </div>
       </div>
 
@@ -144,129 +153,58 @@ export function StepEquipment() {
           <h4 className="text-sm font-medium">Mieszkanie</h4>
         </div>
         <div className="space-y-1.5">
-          {wealth.housingOptions.map((opt: HousingOption) => (
-            <label
-              key={opt.id}
-              className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
-                housingId === opt.id
-                  ? 'border-coc-accent bg-coc-accent/10'
-                  : 'border-coc-border hover:border-coc-accent/50'
-              }`}
-            >
-              <input
-                type="radio"
-                name="housing"
-                value={opt.id}
-                checked={housingId === opt.id}
-                onChange={() => handleHousingChange(opt.id)}
-                className="mt-1"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{opt.label}</span>
-                  <Badge variant={opt.ownership === 'own' ? 'success' : opt.ownership === 'rent' ? 'default' : 'warning'}>
-                    {opt.ownership === 'own' ? 'własność' : opt.ownership === 'rent' ? 'wynajem' : 'bezpłatne'}
-                  </Badge>
-                  {opt.cost > 0 && (
-                    <span className="text-xs text-coc-text-muted ml-auto">−{curr(opt.cost)}</span>
-                  )}
+          {bracket.housingOptions.map((opt: HousingOption) => {
+            const assetCost = baseAssets * (opt.assetReductionPct / 100)
+            const cashCost = baseCash * (opt.cashReductionPct / 100)
+            return (
+              <label
+                key={opt.id}
+                className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
+                  housingId === opt.id
+                    ? 'border-coc-accent bg-coc-accent/10'
+                    : 'border-coc-border hover:border-coc-accent/50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="housing"
+                  value={opt.id}
+                  checked={housingId === opt.id}
+                  onChange={() => setHousingId(opt.id)}
+                  className="mt-1"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium">{opt.label}</span>
+                    <Badge variant={opt.ownership === 'own' ? 'success' : opt.ownership === 'rent' ? 'default' : 'warning'}>
+                      {opt.ownership === 'own' ? 'własność' : opt.ownership === 'rent' ? 'wynajem' : 'bezpłatne'}
+                    </Badge>
+                    {(opt.assetReductionPct > 0 || opt.cashReductionPct > 0) && (
+                      <span className="text-xs text-coc-text-muted ml-auto">
+                        {opt.assetReductionPct > 0 && `−${opt.assetReductionPct}% dobytek (${curr(assetCost)})`}
+                        {opt.assetReductionPct > 0 && opt.cashReductionPct > 0 && ' | '}
+                        {opt.cashReductionPct > 0 && `−${opt.cashReductionPct}% gotówka (${curr(cashCost)})`}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-coc-text-muted">{opt.description}</p>
                 </div>
-                <p className="text-xs text-coc-text-muted">{opt.description}</p>
-              </div>
-            </label>
-          ))}
+              </label>
+            )
+          })}
         </div>
       </div>
 
-      {/* Section C: Clothing */}
-      <div className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Shirt className="w-4 h-4 text-coc-accent-light" />
-          <h4 className="text-sm font-medium">Ubranie</h4>
-        </div>
-        <div className="space-y-1.5">
-          {wealth.clothingOptions.map((opt: ClothingOption) => (
-            <label
-              key={opt.id}
-              className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
-                clothingId === opt.id
-                  ? 'border-coc-accent bg-coc-accent/10'
-                  : 'border-coc-border hover:border-coc-accent/50'
-              }`}
-            >
-              <input
-                type="radio"
-                name="clothing"
-                value={opt.id}
-                checked={clothingId === opt.id}
-                onChange={() => handleClothingChange(opt.id)}
-                className="mt-1"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{opt.label}</span>
-                  {opt.cost > 0 ? (
-                    <span className="text-xs text-coc-text-muted ml-auto">−{curr(opt.cost)}</span>
-                  ) : (
-                    <Badge variant="warning">darmowe</Badge>
-                  )}
-                </div>
-                <p className="text-xs text-coc-text-muted">{opt.description}</p>
-              </div>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Section D: Transport */}
-      <div className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Car className="w-4 h-4 text-coc-accent-light" />
-          <h4 className="text-sm font-medium">Transport</h4>
-        </div>
-        <div className="space-y-1.5">
-          {wealth.transportOptions.map((opt: TransportOption) => (
-            <label
-              key={opt.id}
-              className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
-                transportId === opt.id
-                  ? 'border-coc-accent bg-coc-accent/10'
-                  : 'border-coc-border hover:border-coc-accent/50'
-              }`}
-            >
-              <input
-                type="radio"
-                name="transport"
-                value={opt.id}
-                checked={transportId === opt.id}
-                onChange={() => handleTransportChange(opt.id)}
-                className="mt-1"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{opt.label}</span>
-                  {opt.cost > 0 ? (
-                    <span className="text-xs text-coc-text-muted ml-auto">−{curr(opt.cost)}</span>
-                  ) : (
-                    <Badge variant="warning">darmowe</Badge>
-                  )}
-                </div>
-                <p className="text-xs text-coc-text-muted">{opt.description}</p>
-              </div>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Section E: Lifestyle */}
+      {/* Section C: Lifestyle */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-4 h-4 text-coc-accent-light" />
           <h4 className="text-sm font-medium">Styl życia</h4>
         </div>
         <div className="space-y-1.5">
-          {lifestyleLevels.map((opt: LifestyleLevel) => {
-            const isFree = creditRating >= opt.minCreditRating
+          {bracket.lifestyleOptions.map((opt: LifestyleOption, i: number) => {
+            const isFree = i === 0  // first option is always the default/free one
+            const assetCost = baseAssets * (opt.assetReductionPct / 100)
             return (
               <label
                 key={opt.id}
@@ -281,20 +219,24 @@ export function StepEquipment() {
                   name="lifestyle"
                   value={opt.id}
                   checked={lifestyleId === opt.id}
-                  onChange={() => handleLifestyleChange(opt.id)}
+                  onChange={() => setLifestyleId(opt.id)}
                   className="mt-1"
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium">{opt.label}</span>
                     {isFree ? (
-                      <Badge variant="success">darmowe (CR {opt.minCreditRating}+)</Badge>
+                      <Badge variant="success">darmowe</Badge>
                     ) : (
-                      <span className="text-xs text-coc-text-muted ml-auto">−{curr(opt.cost)} z majątku</span>
+                      <span className="text-xs text-coc-text-muted ml-auto">
+                        −{opt.assetReductionPct}% dobytek ({curr(assetCost)})
+                      </span>
                     )}
                   </div>
                   <p className="text-xs text-coc-text-muted">
-                    {opt.description} — przedmioty ≤ {curr(opt.freeItemThreshold)} darmowe
+                    {opt.description}
+                    {opt.freeItemThreshold > 0 && ` — przedmioty ≤ ${curr(opt.freeItemThreshold)} darmowe`}
+                    {opt.servants && ` — ${opt.servants}`}
                   </p>
                 </div>
               </label>
@@ -303,10 +245,50 @@ export function StepEquipment() {
         </div>
       </div>
 
-      {/* Section F: Wealth Summary + Form */}
+      {/* Section D: Transport */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Car className="w-4 h-4 text-coc-accent-light" />
+          <h4 className="text-sm font-medium">Transport</h4>
+        </div>
+        <div className="space-y-1.5">
+          {bracket.transportOptions.map((opt: TransportOption) => (
+            <label
+              key={opt.id}
+              className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
+                transportId === opt.id
+                  ? 'border-coc-accent bg-coc-accent/10'
+                  : 'border-coc-border hover:border-coc-accent/50'
+              }`}
+            >
+              <input
+                type="radio"
+                name="transport"
+                value={opt.id}
+                checked={transportId === opt.id}
+                onChange={() => setTransportId(opt.id)}
+                className="mt-1"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{opt.label}</span>
+                  {opt.free ? (
+                    <Badge variant="warning">darmowe</Badge>
+                  ) : (
+                    <span className="text-xs text-coc-text-muted ml-auto">−{curr(opt.cost)}</span>
+                  )}
+                </div>
+                <p className="text-xs text-coc-text-muted">{opt.description}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Section E: Wealth Summary + Form */}
       <div className="mb-4 border border-coc-border rounded-lg p-3">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium">Pozostały majątek</h4>
+          <h4 className="text-sm font-medium">Pozostały dobytek</h4>
           <Badge variant={remainingAssets > 0 ? 'success' : 'warning'}>
             {curr(remainingAssets)}
           </Badge>
@@ -323,7 +305,7 @@ export function StepEquipment() {
           <div className="flex items-center gap-2">
             <Landmark className="w-4 h-4 text-coc-text-muted" />
             <div>
-              <div className="text-xs text-coc-text-muted">Majątek ulokowany</div>
+              <div className="text-xs text-coc-text-muted">Dobytek ulokowany</div>
               <div className="font-mono font-bold">{curr(wealthFormAmount)}</div>
             </div>
           </div>
@@ -332,43 +314,52 @@ export function StepEquipment() {
         {wealthFormAmount > 0 && (
           <>
             <p className="text-xs text-coc-text-muted mb-2">
-              Gdzie przechowujesz resztę majątku ({curr(wealthFormAmount)})?
+              Gdzie przechowujesz dobytek ({curr(wealthFormAmount)})? Wybierz formy — kwota zostanie podzielona równo.
             </p>
             <div className="space-y-1.5">
-              {wealthForms.map((form) => (
-                <label
-                  key={form.id}
-                  className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
-                    wealthFormId === form.id
-                      ? 'border-coc-accent bg-coc-accent/10'
-                      : 'border-coc-border hover:border-coc-accent/50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="wealthForm"
-                    value={form.id}
-                    checked={wealthFormId === form.id}
-                    onChange={() => setWealthFormId(form.id)}
-                    className="mt-1"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium">{form.label}</span>
-                    <p className="text-xs text-coc-text-muted">{form.description}</p>
-                  </div>
-                </label>
-              ))}
+              {wealthForms.map((form) => {
+                const isSelected = wealthFormIds.includes(form.id)
+                const perFormAmount = isSelected && wealthFormIds.length > 0
+                  ? wealthFormAmount / wealthFormIds.length
+                  : 0
+                return (
+                  <label
+                    key={form.id}
+                    className={`flex items-start gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'border-coc-accent bg-coc-accent/10'
+                        : 'border-coc-border hover:border-coc-accent/50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleWealthForm(form.id)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{form.label}</span>
+                        {isSelected && (
+                          <span className="text-xs text-coc-accent-light ml-auto">{curr(perFormAmount)}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-coc-text-muted">{form.description}</p>
+                    </div>
+                  </label>
+                )
+              })}
             </div>
           </>
         )}
 
         <p className="text-xs text-coc-text-muted mt-2">
           Gotówka na ręce to pieniądze które masz przy sobie — z nich kupujesz ekwipunek.
-          Forma majątku to jak przechowujesz resztę — może mieć znaczenie fabularne w grze.
+          Forma dobytku to jak przechowujesz resztę — może mieć znaczenie fabularne w grze.
         </p>
       </div>
 
-      {/* Section G: Equipment catalog */}
+      {/* Section F: Equipment catalog */}
       <div className="border-t border-coc-border pt-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-medium">Ekwipunek</h4>

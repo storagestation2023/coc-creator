@@ -15,45 +15,19 @@ export const SKILLS: Skill[] = [
     category: 'academic',
   },
   {
-    id: 'bijatyka',
-    name: 'Bijatyka',
-    base: 25,
-    category: 'combat_melee',
-    specializations: ['Walka Wręcz'],
-  },
-  {
-    id: 'bicz',
-    name: 'Bicz',
-    base: 5,
-    category: 'combat_melee',
-    rare: true,
-  },
-  {
-    id: 'bron_artyleryjska',
-    name: 'Broń Artyleryjska',
-    base: 1,
-    category: 'combat_ranged',
-    rare: true,
-  },
-  {
-    id: 'bron_ciezka',
-    name: 'Broń Ciężka',
-    base: 10,
-    category: 'combat_ranged',
-    specializations: ['Broń Palna'],
-  },
-  {
-    id: 'bron_krotka',
-    name: 'Broń Krótka',
+    id: 'bron_palna',
+    name: 'Broń Palna',
     base: 20,
     category: 'combat_ranged',
-    specializations: ['Broń Palna'],
-  },
-  {
-    id: 'bron_obuchowa',
-    name: 'Broń Obuchowa',
-    base: 10,
-    category: 'combat_melee',
+    combatSpecializations: [
+      { id: 'krotka', name: 'Krótka', base: 20 },
+      { id: 'karabin_strzelba', name: 'Karabin/Strzelba', base: 25 },
+      { id: 'pistolet_maszynowy', name: 'Pistolet Maszynowy', base: 15 },
+      { id: 'karabin_maszynowy', name: 'Karabin Maszynowy', base: 10, rare: true },
+      { id: 'ciezka', name: 'Ciężka', base: 10 },
+      { id: 'artyleryjska', name: 'Artyleryjska', base: 1, rare: true },
+      { id: 'miotacz_ognia', name: 'Miotacz Ognia', base: 10, rare: true },
+    ],
   },
   {
     id: 'charakteryzacja',
@@ -86,13 +60,6 @@ export const SKILLS: Skill[] = [
     name: 'Gadanina',
     base: 5,
     category: 'social',
-  },
-  {
-    id: 'garota',
-    name: 'Garota',
-    base: 15,
-    category: 'combat_melee',
-    rare: true,
   },
   {
     id: 'hipnoza',
@@ -138,19 +105,6 @@ export const SKILLS: Skill[] = [
     name: 'Język Ojczysty',
     base: 'edu',
     category: 'academic',
-  },
-  {
-    id: 'karabin_strzelba',
-    name: 'Karabin/Strzelba',
-    base: 25,
-    category: 'combat_ranged',
-  },
-  {
-    id: 'karabin_maszynowy',
-    name: 'Karabin Maszynowy',
-    base: 10,
-    category: 'combat_ranged',
-    rare: true,
   },
   {
     id: 'korzystanie_z_bibliotek',
@@ -201,19 +155,6 @@ export const SKILLS: Skill[] = [
     name: 'Medycyna',
     base: 1,
     category: 'academic',
-  },
-  {
-    id: 'miecz',
-    name: 'Miecz',
-    base: 20,
-    category: 'combat_melee',
-  },
-  {
-    id: 'miotacz_ognia',
-    name: 'Miotacz Ognia',
-    base: 10,
-    category: 'combat_ranged',
-    rare: true,
   },
   {
     id: 'mity_cthulhu',
@@ -281,14 +222,6 @@ export const SKILLS: Skill[] = [
     category: 'social',
   },
   {
-    id: 'pila_lancuchowa',
-    name: 'Piła Łańcuchowa',
-    base: 10,
-    category: 'combat_melee',
-    rare: true,
-    era: ['modern'],
-  },
-  {
     id: 'pilotowanie',
     name: 'Pilotowanie',
     base: 1,
@@ -300,12 +233,6 @@ export const SKILLS: Skill[] = [
     name: 'Pierwsza Pomoc',
     base: 30,
     category: 'practical',
-  },
-  {
-    id: 'pistolet_maszynowy',
-    name: 'Pistolet Maszynowy',
-    base: 15,
-    category: 'combat_ranged',
   },
   {
     id: 'plywanie',
@@ -398,12 +325,6 @@ export const SKILLS: Skill[] = [
     category: 'practical',
   },
   {
-    id: 'topor_siekiera',
-    name: 'Topór/Siekiera',
-    base: 15,
-    category: 'combat_melee',
-  },
-  {
     id: 'tresura_zwierzat',
     name: 'Tresura Zwierząt',
     base: 5,
@@ -435,6 +356,28 @@ export const SKILLS: Skill[] = [
     category: 'social',
   },
   {
+    id: 'walka_wrecz',
+    name: 'Walka Wręcz',
+    base: 25,
+    category: 'combat_melee',
+    combatSpecializations: [
+      { id: 'bijatyka', name: 'Bijatyka', base: 25 },
+      { id: 'miecz', name: 'Miecz', base: 20 },
+      { id: 'bron_obuchowa', name: 'Broń Obuchowa', base: 10 },
+      { id: 'topor', name: 'Topór/Siekiera', base: 15 },
+      { id: 'wlocznia', name: 'Włócznia', base: 20 },
+      { id: 'bicz', name: 'Bicz', base: 5, rare: true },
+      { id: 'garota', name: 'Garota', base: 15, rare: true },
+      { id: 'pila', name: 'Piła Łańcuchowa', base: 10, rare: true, era: ['modern'] },
+    ],
+  },
+  {
+    id: 'wycena',
+    name: 'Wycena',
+    base: 5,
+    category: 'academic',
+  },
+  {
     id: 'wiedza_o_naturze',
     name: 'Wiedza o Naturze',
     base: 10,
@@ -448,22 +391,10 @@ export const SKILLS: Skill[] = [
     rare: true,
   },
   {
-    id: 'wlocznia',
-    name: 'Włócznia',
-    base: 20,
-    category: 'combat_melee',
-  },
-  {
     id: 'wspinaczka',
     name: 'Wspinaczka',
     base: 20,
     category: 'physical',
-  },
-  {
-    id: 'wycena',
-    name: 'Wycena',
-    base: 5,
-    category: 'academic',
   },
   {
     id: 'zastraszanie',
@@ -479,26 +410,49 @@ export const SKILLS: Skill[] = [
   },
 ]
 
-/** Extract base skill ID from a composite key. 'nauka:Fizyka' → 'nauka', 'bijatyka' → 'bijatyka' */
+/** Extract base skill ID from a composite key. 'nauka:Fizyka' → 'nauka', 'walka_wrecz:bijatyka' → 'walka_wrecz' */
 export function getBaseSkillId(key: string): string {
   if (key.startsWith('choice:') || key === 'any' || key === 'any_academic') return key
   const colonIdx = key.indexOf(':')
   return colonIdx > 0 ? key.substring(0, colonIdx) : key
 }
 
-/** Extract specialization from composite key. 'nauka:Fizyka' → 'Fizyka', 'nauka' → null */
+/** Extract specialization from composite key. 'nauka:Fizyka' → 'Fizyka', 'walka_wrecz:bijatyka' → 'bijatyka' */
 export function getSpecialization(key: string): string | null {
   if (key.startsWith('choice:') || key === 'any' || key === 'any_academic') return null
   const colonIdx = key.indexOf(':')
   return colonIdx > 0 ? key.substring(colonIdx + 1) : null
 }
 
-/** Format a composite skill key for display. 'nauka:Fizyka' → 'Nauka (Fizyka)' */
+/** Get the base value for a skill, handling combat specialization composite keys.
+ *  'walka_wrecz:bijatyka' → 25, 'walka_wrecz:miecz' → 20, 'nauka:Fizyka' → 1 */
+export function getSkillBase(compositeKey: string): number | 'half_dex' | 'edu' {
+  const baseId = getBaseSkillId(compositeKey)
+  const spec = getSpecialization(compositeKey)
+  const skill = SKILLS.find((s) => s.id === baseId)
+  if (!skill) return 0
+
+  if (spec && skill.combatSpecializations) {
+    const combatSpec = skill.combatSpecializations.find((cs) => cs.id === spec)
+    if (combatSpec) return combatSpec.base
+  }
+
+  return skill.base
+}
+
+/** Format a composite skill key for display.
+ *  'nauka:Fizyka' → 'Nauka (Fizyka)', 'walka_wrecz:bijatyka' → 'Walka Wręcz (Bijatyka)' */
 export function getSkillDisplayName(key: string): string {
   const baseId = getBaseSkillId(key)
   const skill = SKILLS.find((s) => s.id === baseId)
   const baseName = skill?.name ?? baseId
   const spec = getSpecialization(key)
+
+  if (spec && skill?.combatSpecializations) {
+    const combatSpec = skill.combatSpecializations.find((cs) => cs.id === spec)
+    if (combatSpec) return `${baseName} (${combatSpec.name})`
+  }
+
   return spec ? `${baseName} (${spec})` : baseName
 }
 

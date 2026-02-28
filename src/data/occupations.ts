@@ -31,13 +31,13 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'law_enforcement',
     skill_formula: { characteristics: ['EDU'], multiplier: 4 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'perswazja',
       'prawo',
       'prowadzenie_samochodu',
       'spostrzegawczosc',
       'ukrywanie',
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'any',
     ],
     credit_rating: { min: 20, max: 40 },
@@ -49,13 +49,13 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'law_enforcement',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'korzystanie_z_bibliotek',
       'prawo',
       'psychologia',
       'tropienie',
       'ukrywanie',
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'choice:1:perswazja,gadanina,urok_osobisty,zastraszanie',
     ],
     credit_rating: { min: 20, max: 45 },
@@ -69,7 +69,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'law_enforcement',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'choice:1:charakteryzacja,sztuka_rzemioslo',
       'nasluchiwanie',
       'prawo',
@@ -89,7 +89,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'law_enforcement',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy,bijatyka,bicz,bron_obuchowa,garota,miecz,topor_siekiera,wlocznia',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy,walka_wrecz:bijatyka,walka_wrecz:bicz,walka_wrecz:bron_obuchowa,walka_wrecz:garota,walka_wrecz:miecz,walka_wrecz:topor,walka_wrecz:wlocznia',
       'choice:1:elektronika,elektryka',
       'prawo',
       'prowadzenie_samochodu',
@@ -109,8 +109,8 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'law_enforcement',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
-      'bijatyka',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
+      'walka_wrecz:bijatyka',
       'pierwsza_pomoc',
       'prawo',
       'psychologia',
@@ -186,7 +186,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'military',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'ksiegowosc',
       'nawigacja',
       'pierwsza_pomoc',
@@ -205,12 +205,12 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'military',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'choice:1:plywanie,wspinaczka',
       'sztuka_przetrwania',
       'ukrywanie',
       'unik',
-      'choice:1:bijatyka,bicz,bron_obuchowa,garota,miecz,topor_siekiera,wlocznia',
+      'choice:1:walka_wrecz:bijatyka,walka_wrecz:bicz,walka_wrecz:bron_obuchowa,walka_wrecz:garota,walka_wrecz:miecz,walka_wrecz:topor,walka_wrecz:wlocznia',
       'choice:2:jezyk_obcy,mechanika,pierwsza_pomoc',
     ],
     credit_rating: { min: 9, max: 30 },
@@ -244,7 +244,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'military',
     skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'choice:1:charakteryzacja,sztuka_rzemioslo',
       'jezyk_obcy',
       'nasluchiwanie',
@@ -343,7 +343,7 @@ export const OCCUPATIONS: Occupation[] = [
       'psychologia',
       'ukrywanie',
       'unik',
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'choice:2:perswazja,gadanina,urok_osobisty,zastraszanie',
     ],
     credit_rating: { min: 8, max: 20 },
@@ -363,7 +363,7 @@ export const OCCUPATIONS: Occupation[] = [
       'pierwsza_pomoc',
       'psychologia',
       'ukrywanie',
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'choice:1:perswazja,gadanina,urok_osobisty,zastraszanie',
     ],
     credit_rating: { min: 6, max: 15 },
@@ -604,7 +604,7 @@ export const OCCUPATIONS: Occupation[] = [
       'historia',
       'psychologia',
       'sztuka_rzemioslo:Aktorstwo',
-      'choice:1:bijatyka,bicz,bron_obuchowa,garota,miecz,topor_siekiera,wlocznia',
+      'choice:1:walka_wrecz:bijatyka,walka_wrecz:bicz,walka_wrecz:bron_obuchowa,walka_wrecz:garota,walka_wrecz:miecz,walka_wrecz:topor,walka_wrecz:wlocznia',
       'choice:2:perswazja,gadanina,urok_osobisty,zastraszanie',
       'any',
     ],
@@ -820,10 +820,10 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'crime_underworld',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'prowadzenie_samochodu',
       'psychologia',
-      'choice:1:bijatyka,bicz,bron_obuchowa,garota,miecz,topor_siekiera,wlocznia',
+      'choice:1:walka_wrecz:bijatyka,walka_wrecz:bicz,walka_wrecz:bron_obuchowa,walka_wrecz:garota,walka_wrecz:miecz,walka_wrecz:topor,walka_wrecz:wlocznia',
       'choice:2:perswazja,gadanina,urok_osobisty,zastraszanie',
       'any',
       'any',
@@ -875,7 +875,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'crime_underworld',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy,bijatyka,bicz,bron_obuchowa,garota,miecz,topor_siekiera,wlocznia',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy,walka_wrecz:bijatyka,walka_wrecz:bicz,walka_wrecz:bron_obuchowa,walka_wrecz:garota,walka_wrecz:miecz,walka_wrecz:topor,walka_wrecz:wlocznia',
       'choice:1:charakteryzacja,sztuka_rzemioslo',
       'choice:1:mechanika,slusarstwo',
       'psychologia',
@@ -913,7 +913,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'crime_underworld',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'nasluchiwanie',
       'nawigacja',
       'choice:1:prowadzenie_samochodu,pilotowanie',
@@ -940,7 +940,7 @@ export const OCCUPATIONS: Occupation[] = [
       'plywanie',
       'spostrzegawczosc',
       'sztuka_przetrwania',
-      'choice:1:rzucanie,bijatyka,bicz,bron_obuchowa,garota,miecz,topor_siekiera,wlocznia',
+      'choice:1:rzucanie,walka_wrecz:bijatyka,walka_wrecz:bicz,walka_wrecz:bron_obuchowa,walka_wrecz:garota,walka_wrecz:miecz,walka_wrecz:topor,walka_wrecz:wlocznia',
       'wiedza_o_naturze',
       'wspinaczka',
     ],
@@ -995,7 +995,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'nature_travel',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy,bijatyka,bicz,bron_obuchowa,garota,miecz,topor_siekiera,wlocznia',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy,walka_wrecz:bijatyka,walka_wrecz:bicz,walka_wrecz:bron_obuchowa,walka_wrecz:garota,walka_wrecz:miecz,walka_wrecz:topor,walka_wrecz:wlocznia',
       'jezdziectwo',
       'choice:1:pierwsza_pomoc,wiedza_o_naturze',
       'rzucanie',
@@ -1015,7 +1015,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'nature_travel',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'choice:1:jezyk_obcy,sztuka_przetrwania',
       'choice:1:nasluchiwanie,spostrzegawczosc',
       'nauka:Biologia,Botanika,Zoologia',
@@ -1073,7 +1073,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'nature_travel',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'historia',
       'jezyk_obcy',
       'nawigacja',
@@ -1132,7 +1132,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'nature_travel',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'nasluchiwanie',
       'nawigacja',
       'pierwsza_pomoc',
@@ -1189,7 +1189,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'trade_services',
     skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
     skills: [
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'ksiegowosc',
       'nasluchiwanie',
       'psychologia',
@@ -1206,7 +1206,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'trade_services',
     skill_formula: { characteristics: ['EDU', 'APP'], multiplier: 2 },
     skills: [
-      'choice:1:bron_krotka,karabin_strzelba,pistolet_maszynowy',
+      'choice:1:bron_palna:krotka,bron_palna:karabin_strzelba,bron_palna:pistolet_maszynowy',
       'jezdziectwo',
       'jezyk_obcy',
       'sztuka_rzemioslo',
@@ -1229,7 +1229,7 @@ export const OCCUPATIONS: Occupation[] = [
       'historia',
       'jezdziectwo',
       'jezyk_obcy',
-      'karabin_strzelba',
+      'bron_palna:karabin_strzelba',
       'nawigacja',
       'sztuka_rzemioslo',
       'choice:2:perswazja,gadanina,urok_osobisty,zastraszanie',
@@ -1359,7 +1359,7 @@ export const OCCUPATIONS: Occupation[] = [
       'gadanina',
       'nasluchiwanie',
       'nawigacja',
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'ukrywanie',
       'spostrzegawczosc',
       'sztuka_przetrwania',
@@ -1399,7 +1399,7 @@ export const OCCUPATIONS: Occupation[] = [
       'gadanina',
       'nasluchiwanie',
       'nawigacja',
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'ukrywanie',
       'spostrzegawczosc',
       'sztuka_przetrwania',
@@ -1663,7 +1663,7 @@ export const OCCUPATIONS: Occupation[] = [
       'spostrzegawczosc',
       'rzucanie',
       'sztuka_rzemioslo',
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'any',
     ],
     credit_rating: { min: 9, max: 20 },
@@ -1675,7 +1675,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'sports_action',
     skill_formula: { characteristics: ['EDU', 'STR'], multiplier: 2 },
     skills: [
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'unik',
       'zastraszanie',
       'skakanie',
@@ -1693,7 +1693,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'sports_action',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'unik',
       'skakanie',
       'wspinaczka',
@@ -1711,7 +1711,7 @@ export const OCCUPATIONS: Occupation[] = [
     category: 'sports_action',
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'jezdziectwo',
       'plywanie',
       'rzucanie',
@@ -1770,7 +1770,7 @@ export const OCCUPATIONS: Occupation[] = [
     skill_formula: { characteristics: ['EDU', 'DEX'], multiplier: 2 },
     skills: [
       'prowadzenie_samochodu',
-      'bijatyka',
+      'walka_wrecz:bijatyka',
       'mechanika',
       'obsluga_ciezkiego_sprzetu',
       'spostrzegawczosc',
@@ -1878,9 +1878,11 @@ export function parseSkillSlot(sid: string): ParsedSkillSlot {
   if (sid === 'any') return { type: 'any' }
   if (sid === 'any_academic') return { type: 'any_academic' }
   if (sid.startsWith('choice:')) {
-    const parts = sid.split(':')
-    const count = parseInt(parts[1], 10) || 1
-    const options = parts[2]?.split(',') ?? []
+    // Parse 'choice:N:opt1,opt2,...' — options may contain colons (composite keys like bron_palna:krotka)
+    const firstColon = sid.indexOf(':')
+    const secondColon = sid.indexOf(':', firstColon + 1)
+    const count = parseInt(sid.substring(firstColon + 1, secondColon), 10) || 1
+    const options = sid.substring(secondColon + 1).split(',')
     return { type: 'choice', choice: { count, options } }
   }
 

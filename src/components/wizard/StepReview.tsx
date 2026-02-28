@@ -5,8 +5,8 @@ import { useCharacterStore } from '@/stores/characterStore'
 import { useCharacterSubmit } from '@/hooks/useCharacterSubmit'
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
 import { OCCUPATIONS } from '@/data/occupations'
-import { getSkillById, getSkillDisplayName } from '@/data/skills'
-import { getWealthBracket, LIFESTYLE_LEVELS, WEALTH_FORMS } from '@/data/eras'
+import { getSkillById, getSkillDisplayName, getSkillBase } from '@/data/skills'
+import { getWealthBracket, WEALTH_FORMS } from '@/data/eras'
 import { ERA_LABELS, METHOD_LABELS, type CharacteristicKey } from '@/types/common'
 import type { Characteristics } from '@/types/character'
 import { halfValue, fifthValue } from '@/lib/utils'
@@ -32,11 +32,10 @@ export function StepReview() {
   }
 
   const getBase = (skillId: string) => {
-    const skill = getSkillById(skillId)
-    if (!skill) return 0
-    if (skill.base === 'half_dex') return Math.floor((chars.DEX ?? 0) / 2)
-    if (skill.base === 'edu') return chars.EDU ?? 0
-    return skill.base
+    const base = getSkillBase(skillId)
+    if (base === 'half_dex') return Math.floor((chars.DEX ?? 0) / 2)
+    if (base === 'edu') return chars.EDU ?? 0
+    return base
   }
 
   const handleSubmit = async () => {
@@ -141,29 +140,31 @@ export function StepReview() {
       </Section>
 
       {/* Lifestyle & Equipment */}
-      <Section title="Majątek i ekwipunek">
+      <Section title="Dobytek i ekwipunek">
         {(() => {
           const era = store.era
           const creditRating = (store.occupationSkillPoints['majetnosc'] ?? 0) +
             (typeof getSkillById('majetnosc')?.base === 'number' ? (getSkillById('majetnosc')?.base as number) : 0)
           const bracket = era ? getWealthBracket(era, creditRating) : null
           const housing = bracket?.housingOptions.find((h) => h.id === store.housingId)
-          const clothing = bracket?.clothingOptions.find((c) => c.id === store.clothingId)
           const transport = bracket?.transportOptions.find((t) => t.id === store.transportId)
-          const lifestyle = era ? LIFESTYLE_LEVELS[era].find((l) => l.id === store.lifestyleId) : null
-          const wealthForm = era ? WEALTH_FORMS[era].find((f) => f.id === store.wealthFormId) : null
+          const lifestyle = bracket?.lifestyleOptions.find((l) => l.id === store.lifestyleId)
+          const selectedForms = era
+            ? WEALTH_FORMS[era].filter((f) => store.wealthFormIds.includes(f.id))
+            : []
           return (
             <>
               <div className="grid grid-cols-2 gap-2 text-sm mb-2">
                 <Field label="Mieszkanie" value={housing?.label ?? '—'} />
-                <Field label="Ubranie" value={clothing?.label ?? '—'} />
                 <Field label="Transport" value={transport?.label ?? '—'} />
                 <Field label="Styl życia" value={lifestyle?.label ?? '—'} />
+                <Field label="Poziom życia" value={store.spendingLevel} />
               </div>
               <div className="flex flex-wrap gap-2 mb-2">
                 <Badge>Gotówka: {store.cash}</Badge>
-                {wealthForm && <Badge>Majątek: {wealthForm.label}</Badge>}
-                <Badge>Poziom życia: {store.spendingLevel}</Badge>
+                {selectedForms.length > 0 && (
+                  <Badge>Dobytek: {selectedForms.map((f) => f.label).join(', ')}</Badge>
+                )}
               </div>
             </>
           )
