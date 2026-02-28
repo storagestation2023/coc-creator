@@ -63,20 +63,22 @@ const P1_INFO = {
 // --- PAGE 1: Characteristics grid ---
 // Sheet labels → our keys:
 //   S=STR, KON=CON, BC=SIZ, ZR=DEX, WYG=APP, INT=INT, MOC=POW, WYK=EDU
-// Each cell: { value, half, fifth } — coordinates are BOX CENTERS
-// Grid spans x≈288-600, 3 columns of ~104pt each
+// Each characteristic: large value box, then two STACKED small boxes to its right
+//   top small box = half value, bottom small box = fifth value
+// Grid spans x≈288-600, 3 groups of ~104pt each
+// Half/fifth are stacked vertically: same X (value X + ~30), Y offset ±8
 const P1_CHARS: Record<CharacteristicKey, { value: [number, number]; half: [number, number]; fifth: [number, number] }> = {
   // Row 1: S, ZR, MOC  (y≈768)
-  STR: { value: [332, 768], half: [359, 768], fifth: [381, 768] },
-  DEX: { value: [436, 768], half: [463, 768], fifth: [485, 768] },
-  POW: { value: [540, 768], half: [567, 768], fifth: [589, 768] },
+  STR: { value: [332, 768], half: [362, 776], fifth: [362, 760] },
+  DEX: { value: [436, 768], half: [466, 776], fifth: [466, 760] },
+  POW: { value: [540, 768], half: [570, 776], fifth: [570, 760] },
   // Row 2: KON, WYG, WYK  (y≈733)
-  CON: { value: [332, 733], half: [359, 733], fifth: [381, 733] },
-  APP: { value: [436, 733], half: [463, 733], fifth: [485, 733] },
-  EDU: { value: [540, 733], half: [567, 733], fifth: [589, 733] },
+  CON: { value: [332, 733], half: [362, 741], fifth: [362, 725] },
+  APP: { value: [436, 733], half: [466, 741], fifth: [466, 725] },
+  EDU: { value: [540, 733], half: [570, 741], fifth: [570, 725] },
   // Row 3: BC, INT  (y≈701)  — Ruch is separate
-  SIZ: { value: [332, 701], half: [359, 701], fifth: [381, 701] },
-  INT: { value: [436, 701], half: [463, 701], fifth: [485, 701] },
+  SIZ: { value: [332, 701], half: [362, 709], fifth: [362, 693] },
+  INT: { value: [436, 701], half: [466, 709], fifth: [466, 693] },
 }
 const P1_MOVE: [number, number] = [575, 701]
 
@@ -98,8 +100,12 @@ const P1_DODGE: [number, number] = [560, 88]
 const SKILL_Y0 = 508
 const SKILL_DY = 17.5
 const sy = (row: number) => SKILL_Y0 - row * SKILL_DY
-// Column value X positions (right edge of each column)
+// Column value X positions (center of the large value box)
 const C1X = 160, C2X = 330, C3X = 490, C4X = 590
+// Column half/fifth X positions (center of the stacked small boxes right of value)
+const C1HX = 183, C2HX = 353, C3HX = 513, C4HX = 607
+// Y offset for stacked half (top) / fifth (bottom) within skill rows
+const SKILL_HF_DY = 4.5
 // Column label X positions (for writing names in blank rows)
 const C1L = 62, C2L = 235, C3L = 398, C4L = 560
 
@@ -274,8 +280,8 @@ function fillCharacteristics(page: PDFPage, font: PDFFont, fontBold: PDFFont, ch
     const val = char.characteristics[key] ?? 0
     const pos = P1_CHARS[key]
     drawCentered(page, String(val), pos.value[0], pos.value[1], fontBold, sz)
-    drawCentered(page, String(halfValue(val)), pos.half[0], pos.half[1], font, 8)
-    drawCentered(page, String(fifthValue(val)), pos.fifth[0], pos.fifth[1], font, 8)
+    drawCentered(page, String(halfValue(val)), pos.half[0], pos.half[1], font, 7)
+    drawCentered(page, String(fifthValue(val)), pos.fifth[0], pos.fifth[1], font, 7)
   }
   // Move Rate
   drawCentered(page, String(derived.move_rate), P1_MOVE[0], P1_MOVE[1], fontBold, sz)
@@ -290,15 +296,25 @@ function fillDerived(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: Expo
   drawCentered(page, String(char.luck), P1_LUCK[0], P1_LUCK[1], fontBold, sz)
 }
 
-function fillCombat(page: PDFPage, _font: PDFFont, fontBold: PDFFont, char: ExportCharacter, derived: Derived) {
+function fillCombat(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: ExportCharacter, derived: Derived) {
   // Damage Bonus
   drawCentered(page, String(derived.db), P1_DAMAGE_BONUS[0], P1_DAMAGE_BONUS[1], fontBold, 10)
   // Build
   drawCentered(page, String(derived.build), P1_BUILD[0], P1_BUILD[1], fontBold, 10)
-  // Dodge = base (half DEX) + invested
+  // Dodge = base (half DEX) + invested — with half/fifth stacked boxes
   const dodgeInvested = (char.occupation_skill_points['unik'] ?? 0) + (char.personal_skill_points['unik'] ?? 0)
   const dodgeTotal = resolveBase('unik', char.characteristics) + dodgeInvested
   drawCentered(page, String(dodgeTotal), P1_DODGE[0], P1_DODGE[1], fontBold, 10)
+  drawCentered(page, String(halfValue(dodgeTotal)), P1_DODGE[0] + 28, P1_DODGE[1] + 6, font, 7)
+  drawCentered(page, String(fifthValue(dodgeTotal)), P1_DODGE[0] + 28, P1_DODGE[1] - 6, font, 7)
+}
+
+/** Draw a skill value + stacked half/fifth in the small boxes to its right. */
+function drawSkillEntry(page: PDFPage, font: PDFFont, total: number, vx: number, vy: number) {
+  const hfx = vx === C1X ? C1HX : vx === C2X ? C2HX : vx === C3X ? C3HX : C4HX
+  drawCentered(page, String(total), vx, vy, font, 8)
+  drawCentered(page, String(halfValue(total)), hfx, vy + SKILL_HF_DY, font, 5.5)
+  drawCentered(page, String(fifthValue(total)), hfx, vy - SKILL_HF_DY, font, 5.5)
 }
 
 function fillSkills(page: PDFPage, font: PDFFont, char: ExportCharacter) {
@@ -310,7 +326,6 @@ function fillSkills(page: PDFPage, font: PDFFont, char: ExportCharacter) {
 
   // Track blank row usage
   let langIdx = 0, sciIdx = 0, artIdx = 0, meleeIdx = 0, gunIdx = 0
-  const sz = 8
   const nameSz = 7
 
   for (const [skillKey, invested] of Object.entries(allPoints)) {
@@ -320,7 +335,7 @@ function fillSkills(page: PDFPage, font: PDFFont, char: ExportCharacter) {
     // Direct mapping?
     if (P1_SKILLS[skillKey]) {
       const [x, y] = P1_SKILLS[skillKey]
-      drawCentered(page, String(total), x, y, font, sz)
+      drawSkillEntry(page, font, total, x, y)
       continue
     }
 
@@ -331,33 +346,31 @@ function fillSkills(page: PDFPage, font: PDFFont, char: ExportCharacter) {
     if (baseId === 'jezyk_obcy' && spec && langIdx < BLANK_LANG_ROWS.length) {
       const [lx, vx, y] = BLANK_LANG_ROWS[langIdx++]
       drawLeft(page, spec, lx, y, font, nameSz)
-      drawCentered(page, String(total), vx, y, font, sz)
-      // Also write base value for jezyk_obcy composite on the main row
+      drawSkillEntry(page, font, total, vx, y)
     } else if (baseId === 'nauka' && spec && sciIdx < BLANK_SCIENCE_ROWS.length) {
       const [lx, vx, y] = BLANK_SCIENCE_ROWS[sciIdx++]
       drawLeft(page, spec, lx, y, font, nameSz)
-      drawCentered(page, String(total), vx, y, font, sz)
+      drawSkillEntry(page, font, total, vx, y)
     } else if (baseId === 'sztuka_rzemioslo' && spec && artIdx < BLANK_ART_ROWS.length) {
       const [lx, vx, y] = BLANK_ART_ROWS[artIdx++]
       drawLeft(page, spec, lx, y, font, nameSz)
-      drawCentered(page, String(total), vx, y, font, sz)
+      drawSkillEntry(page, font, total, vx, y)
     } else if (baseId === 'walka_wrecz' && spec && spec !== 'bijatyka' && meleeIdx < BLANK_MELEE_ROWS.length) {
       const [lx, vx, y] = BLANK_MELEE_ROWS[meleeIdx++]
       const combatSpec = SKILLS.find(s => s.id === 'walka_wrecz')?.combatSpecializations?.find(cs => cs.id === spec)
       drawLeft(page, `WW (${combatSpec?.name ?? spec})`, lx, y, font, nameSz)
-      drawCentered(page, String(total), vx, y, font, sz)
+      drawSkillEntry(page, font, total, vx, y)
     } else if (baseId === 'bron_palna' && spec && spec !== 'krotka' && spec !== 'karabin_strzelba' && gunIdx < BLANK_GUN_ROWS.length) {
       const [lx, vx, y] = BLANK_GUN_ROWS[gunIdx++]
       const combatSpec = SKILLS.find(s => s.id === 'bron_palna')?.combatSpecializations?.find(cs => cs.id === spec)
       drawLeft(page, `BP (${combatSpec?.name ?? spec})`, lx, y, font, nameSz)
-      drawCentered(page, String(total), vx, y, font, sz)
+      drawSkillEntry(page, font, total, vx, y)
     } else if (baseId === 'sztuka_przetrwania' && spec) {
-      // Use the main sztuka_przetrwania row with specialization note
       const pos = P1_SKILLS['sztuka_przetrwania']
-      if (pos) drawCentered(page, String(total), pos[0], pos[1], font, sz)
+      if (pos) drawSkillEntry(page, font, total, pos[0], pos[1])
     } else if (baseId === 'pilotowanie' && spec) {
       const pos = P1_SKILLS['pilotowanie']
-      if (pos) drawCentered(page, String(total), pos[0], pos[1], font, sz)
+      if (pos) drawSkillEntry(page, font, total, pos[0], pos[1])
     }
     // Other unmapped skills are silently skipped
   }
