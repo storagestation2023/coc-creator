@@ -4,6 +4,7 @@ import { CreatePage } from '@/pages/CreatePage'
 import { AdminPage } from '@/pages/AdminPage'
 import { SuccessPage } from '@/pages/SuccessPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { TestPdfPage } from '@/pages/TestPdfPage'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/create" element={<CreatePage />} />
         <Route path="/success" element={<SuccessPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/test-pdf" element={<TestPdfPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
