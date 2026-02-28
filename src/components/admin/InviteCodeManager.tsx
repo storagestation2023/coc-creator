@@ -65,7 +65,7 @@ export function InviteCodeManager() {
     setCreating(true)
     try {
       const code = generateInviteCode()
-      await adminCreateCode(password, {
+      const created = await adminCreateCode(password, {
         code,
         methods: newMethods,
         era: newEra,
@@ -73,7 +73,8 @@ export function InviteCodeManager() {
         perks: newPerks,
         max_skill_value: newMaxSkillValue,
       })
-      await fetchCodes()
+      // Optimistic: add returned code to local state instead of refetching
+      setCodes((prev) => [created, ...prev])
     } catch {
       setError('Błąd tworzenia kodu.')
     } finally {
