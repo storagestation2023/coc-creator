@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react'
-import { getSkillById } from '@/data/skills'
+import { getSkillById, getSkillDisplayName } from '@/data/skills'
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
 import { OCCUPATIONS } from '@/data/occupations'
 import { ERA_LABELS, METHOD_LABELS, type CharacteristicKey } from '@/types/common'
@@ -119,17 +119,12 @@ export function CharacterViewer({ character: char, onBack }: CharacterViewerProp
         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm mb-4 max-h-[250px] overflow-y-auto">
           {Object.entries(allSkillPoints)
             .filter(([, pts]) => pts > 0)
-            .sort(([a], [b]) => {
-              const sA = getSkillById(a)
-              const sB = getSkillById(b)
-              return (sA?.name ?? a).localeCompare(sB?.name ?? b, 'pl')
-            })
+            .sort(([a], [b]) => getSkillDisplayName(a).localeCompare(getSkillDisplayName(b), 'pl'))
             .map(([skillId, pts]) => {
-              const skill = getSkillById(skillId)
               const base = getBase(skillId)
               return (
                 <div key={skillId} className="flex justify-between py-0.5">
-                  <span className="text-coc-text-muted truncate">{skill?.name ?? skillId}</span>
+                  <span className="text-coc-text-muted truncate">{getSkillDisplayName(skillId)}</span>
                   <span className="font-mono font-bold ml-2">{base + pts}%</span>
                 </div>
               )

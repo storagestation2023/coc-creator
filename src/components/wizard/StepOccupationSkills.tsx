@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { OCCUPATIONS, parseSkillSlot, isSpecialSlot } from '@/data/occupations'
-import { getSkillById, getSkillsForEra } from '@/data/skills'
+import { getSkillById, getSkillsForEra, getSkillDisplayName } from '@/data/skills'
+import { getWealthBracket } from '@/data/eras'
 import { useSkillPoints } from '@/hooks/useSkillPoints'
 import type { Characteristics } from '@/types/character'
 import type { Era } from '@/types/common'
@@ -52,11 +53,32 @@ export function StepOccupationSkills() {
               break
             }
           }
+        } else if (parsed.type === 'specialized' && parsed.locked === null) {
+          // Open specialization - find matching composite key in stored points
+          const baseId = parsed.id
+          for (const [skillId] of Object.entries(store.occupationSkillPoints)) {
+            if (skillId.startsWith(baseId + ':') && !Object.values(slots).includes(skillId)) {
+              // Check if this specialization is valid for this slot
+              if (parsed.options) {
+                const spec = skillId.substring(baseId.length + 1)
+                if (parsed.options.includes(spec)) {
+                  slots[i] = skillId
+                  break
+                }
+              } else {
+                slots[i] = skillId
+                break
+              }
+            }
+          }
         }
       })
     }
     return slots
   })
+
+  // Custom specialization text input state
+  const [customSpecTexts, setCustomSpecTexts] = useState<Record<number, string>>({})
 
   const { totalOccupationPoints, usedOccupationPoints, remainingOccupationPoints } =
     useSkillPoints(occupation, chars, skillPoints, {})
@@ -128,6 +150,7 @@ export function StepOccupationSkills() {
   const renderSlot = (sid: string, i: number) => {
     const parsed = parseSkillSlot(sid)
 
+    // Fixed skill (no specialization)
     if (parsed.type === 'fixed') {
       const skill = getSkillById(parsed.id)
       if (!skill) return null
@@ -140,6 +163,135 @@ export function StepOccupationSkills() {
           onPointsChange={(d) => handlePointChange(parsed.id, d)}
           maxAdd={maxSkillValue - getBaseValue(parsed.id, chars)}
         />
+      )
+    }
+
+    // Specialized skill with locked or open specialization
+    if (parsed.type === 'specialized') {
+      const skill = getSkillById(parsed.id)
+      if (!skill) return null
+
+      // Locked specialization - no dropdown needed
+      if (parsed.locked) {
+        const compositeKey = `${parsed.id}:${parsed.locked}`
+        return (
+          <SkillRow
+            key={compositeKey}
+            name={getSkillDisplayName(compositeKey)}
+            baseValue={getBaseValue(compositeKey, chars)}
+            addedPoints={skillPoints[compositeKey] ?? 0}
+            onPointsChange={(d) => handlePointChange(compositeKey, d)}
+            maxAdd={maxSkillValue - getBaseValue(compositeKey, chars)}
+          />
+        )
+      }
+
+      // Open or limited specialization - show dropdown
+      const chosenCompositeKey = chosenSlotSkills[i]
+      const specOptions = parsed.options ?? skill.specializations ?? []
+      const chosenValues = Object.values(chosenSlotSkills)
+      const isCustom = chosenCompositeKey === `${parsed.id}:__custom__` || (customSpecTexts[i] !== undefined && chosenCompositeKey?.startsWith(`${parsed.id}:`))
+
+      const handleSpecChange = (value: string) => {
+        if (value === '__custom__') {
+          // Switch to custom input mode
+          const oldKey = chosenSlotSkills[i]
+          if (oldKey && skillPoints[oldKey]) {
+            const newPoints = { ...skillPoints }
+            delete newPoints[oldKey]
+            setSkillPoints(newPoints)
+          }
+          setCustomSpecTexts((prev) => ({ ...prev, [i]: '' }))
+          setChosenSlotSkills((prev) => ({ ...prev, [i]: `${parsed.id}:__custom__` }))
+        } else {
+          // Remove custom text state
+          setCustomSpecTexts((prev) => {
+            const next = { ...prev }
+            delete next[i]
+            return next
+          })
+          handleChooseSlotSkill(i, value)
+        }
+      }
+
+      const handleCustomTextConfirm = () => {
+        const text = customSpecTexts[i]?.trim()
+        if (text) {
+          const compositeKey = `${parsed.id}:${text}`
+          // Remove points from old key
+          const oldKey = chosenSlotSkills[i]
+          if (oldKey && oldKey !== compositeKey && skillPoints[oldKey]) {
+            const newPoints = { ...skillPoints }
+            delete newPoints[oldKey]
+            setSkillPoints(newPoints)
+          }
+          setChosenSlotSkills((prev) => ({ ...prev, [i]: compositeKey }))
+        }
+      }
+
+      // Determine current select value
+      let selectValue = ''
+      if (chosenCompositeKey) {
+        if (customSpecTexts[i] !== undefined) {
+          selectValue = '__custom__'
+        } else {
+          selectValue = chosenCompositeKey
+        }
+      }
+
+      const actualKey = chosenCompositeKey && chosenCompositeKey !== `${parsed.id}:__custom__` ? chosenCompositeKey : undefined
+
+      return (
+        <div key={`slot-${i}`} className="py-1.5 px-2 rounded bg-coc-surface-light/30">
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant="default">
+              {skill.name}
+            </Badge>
+            <select
+              value={selectValue}
+              onChange={(e) => handleSpecChange(e.target.value)}
+              className="flex-1 px-2 py-1 text-sm bg-coc-surface-light border border-coc-border rounded text-coc-text cursor-pointer"
+            >
+              <option value="">— Wybierz specjalizację —</option>
+              {specOptions.map((spec) => {
+                const compKey = `${parsed.id}:${spec}`
+                const alreadyUsed = chosenValues.includes(compKey) && chosenSlotSkills[i] !== compKey
+                if (alreadyUsed) return null
+                return (
+                  <option key={spec} value={compKey}>
+                    {spec}
+                  </option>
+                )
+              })}
+              {!parsed.options && (
+                <option value="__custom__">Inne...</option>
+              )}
+            </select>
+          </div>
+          {isCustom && customSpecTexts[i] !== undefined && (
+            <div className="flex items-center gap-2 mb-1 px-1">
+              <input
+                type="text"
+                value={customSpecTexts[i]}
+                onChange={(e) => setCustomSpecTexts((prev) => ({ ...prev, [i]: e.target.value }))}
+                onBlur={handleCustomTextConfirm}
+                onKeyDown={(e) => e.key === 'Enter' && handleCustomTextConfirm()}
+                placeholder="Wpisz specjalizację..."
+                className="flex-1 px-2 py-1 text-sm bg-coc-surface-light border border-coc-border rounded text-coc-text"
+                autoFocus
+              />
+            </div>
+          )}
+          {actualKey && (
+            <SkillRow
+              name={getSkillDisplayName(actualKey)}
+              baseValue={getBaseValue(actualKey, chars)}
+              addedPoints={skillPoints[actualKey] ?? 0}
+              onPointsChange={(d) => handlePointChange(actualKey, d)}
+              maxAdd={maxSkillValue - getBaseValue(actualKey, chars)}
+            />
+          )}
+        </div>
       )
     }
 
@@ -213,6 +365,12 @@ export function StepOccupationSkills() {
         </Badge>
       </div>
 
+      {occupation.suggested_skills_note && (
+        <p className="text-xs text-coc-text-muted italic mb-3 px-1">
+          {occupation.suggested_skills_note}
+        </p>
+      )}
+
       <div className="space-y-1 mb-4">
         {occupation.skills.map((sid, i) => renderSlot(sid, i))}
 
@@ -229,6 +387,17 @@ export function StepOccupationSkills() {
               Majętność musi być w zakresie {occupation.credit_rating.min}–{occupation.credit_rating.max}
             </p>
           )}
+          {creditRatingTotal > 0 && (() => {
+            const bracket = getWealthBracket(era, creditRatingTotal)
+            const housingRange = bracket.housingOptions.length > 1
+              ? `${bracket.housingOptions[0].label} – ${bracket.housingOptions[bracket.housingOptions.length - 1].label}`
+              : bracket.housingOptions[0]?.label ?? ''
+            return (
+              <div className="mt-1.5 px-2 py-1.5 bg-coc-surface-light/50 rounded text-xs text-coc-text-muted">
+                Poziom życia: {bracket.spendingLevel}/dzień | Majątek: {bracket.assets} | Mieszkanie: {housingRange}
+              </div>
+            )
+          })()}
         </div>
       </div>
 

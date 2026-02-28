@@ -1,7 +1,7 @@
 import { PDFDocument, type PDFPage } from 'pdf-lib'
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
 import { OCCUPATIONS } from '@/data/occupations'
-import { getSkillById } from '@/data/skills'
+import { getSkillById, getSkillDisplayName } from '@/data/skills'
 import type { CharacteristicKey } from '@/types/common'
 import { halfValue, fifthValue } from '@/lib/utils'
 
@@ -164,11 +164,7 @@ export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8
 
     const skillEntries = Object.entries(allSkillPoints)
       .filter(([, pts]) => pts > 0)
-      .sort(([a], [b]) => {
-        const sA = getSkillById(a)
-        const sB = getSkillById(b)
-        return (sA?.name ?? a).localeCompare(sB?.name ?? b, 'pl')
-      })
+      .sort(([a], [b]) => getSkillDisplayName(a).localeCompare(getSkillDisplayName(b), 'pl'))
 
     let col = 0
     for (const [skillId, pts] of skillEntries) {
@@ -179,10 +175,9 @@ export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8
         col = 0
       }
 
-      const skill = getSkillById(skillId)
       const base = getBase(skillId)
       const total = base + pts
-      const name = skill?.name ?? skillId
+      const name = getSkillDisplayName(skillId)
 
       const x = col === 0 ? 50 : 310
       drawText(`${name}: ${total}%`, x, y, 9)

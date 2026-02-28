@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { WizardState } from '@/stores/characterStore'
+import { getWealthBracket, formatCurrency } from '@/data/eras'
+import { getSkillById } from '@/data/skills'
+import type { Era } from '@/types/common'
 
 interface UseCharacterSubmitReturn {
   loading: boolean
@@ -28,6 +31,22 @@ export function useCharacterSubmit(): UseCharacterSubmitReturn {
         .delete()
         .eq('invite_code_id', state.inviteCodeId)
 
+      // Build enriched cash/assets strings with lifestyle info
+      const era = state.era as Era
+      const creditRating = (state.occupationSkillPoints['majetnosc'] ?? 0) +
+        (typeof getSkillById('majetnosc')?.base === 'number' ? (getSkillById('majetnosc')?.base as number) : 0)
+      const bracket = getWealthBracket(era, creditRating)
+      const housing = bracket.housingOptions.find((h) => h.id === state.housingId)
+      const clothing = bracket.clothingOptions.find((c) => c.id === state.clothingId)
+
+      const cashDisplay = [
+        `Gotówka: ${formatCurrency(era, state.cashOnHand)}`,
+        state.bankSavings > 0 ? `Bank: ${formatCurrency(era, state.bankSavings)}` : '',
+        state.investments > 0 ? `Inwestycje: ${formatCurrency(era, state.investments)}` : '',
+      ].filter(Boolean).join(' | ')
+
+      const assetsDisplay = formatCurrency(era, bracket.assetsNumeric)
+
       // Insert the new character
       const { error: insertError } = await supabase.from('characters').insert({
         invite_code_id: state.inviteCodeId,
@@ -43,9 +62,14 @@ export function useCharacterSubmit(): UseCharacterSubmitReturn {
         occupation_skill_points: state.occupationSkillPoints,
         personal_skill_points: state.personalSkillPoints,
         backstory: state.backstory,
-        equipment: [...state.equipment, ...state.customItems],
-        cash: state.cash,
-        assets: state.assets,
+        equipment: [
+          ...(housing ? [`[Mieszkanie] ${housing.label}`] : []),
+          ...(clothing ? [`[Ubranie] ${clothing.label}`] : []),
+          ...state.equipment,
+          ...state.customItems,
+        ],
+        cash: cashDisplay,
+        assets: assetsDisplay,
         spending_level: state.spendingLevel,
         era: state.era,
         method: state.method,

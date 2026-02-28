@@ -56,9 +56,15 @@ export interface WizardState {
   // Step 9: Backstory
   backstory: Partial<Backstory>
 
-  // Step 10: Equipment
+  // Step 10: Equipment & Wealth
   equipment: string[]
   customItems: string[]
+  housingId: string
+  clothingId: string
+  cashOnHand: number
+  bankSavings: number
+  investments: number
+  // Display strings (kept for DB backward compatibility)
   cash: string
   assets: string
   spendingLevel: string
@@ -85,7 +91,11 @@ export interface WizardState {
   setBackstory: (backstory: Partial<Backstory>) => void
   setEquipment: (equipment: string[]) => void
   setCustomItems: (items: string[]) => void
-  setWealth: (data: { cash: string; assets: string; spendingLevel: string }) => void
+  setLifestyle: (data: {
+    housingId: string; clothingId: string;
+    cashOnHand: number; bankSavings: number; investments: number;
+    cash: string; assets: string; spendingLevel: string
+  }) => void
   /** Abandon current character, increment timesUsed, reset character data, go to step 1 */
   abandonCharacter: () => void
   reset: () => void
@@ -122,6 +132,11 @@ const initialState = {
   backstory: {},
   equipment: [],
   customItems: [],
+  housingId: '',
+  clothingId: '',
+  cashOnHand: 0,
+  bankSavings: 0,
+  investments: 0,
   cash: '',
   assets: '',
   spendingLevel: '',
@@ -168,6 +183,11 @@ export const useCharacterStore = create<WizardState>()(
           backstory: {},
           equipment: [],
           customItems: [],
+          housingId: '',
+          clothingId: '',
+          cashOnHand: 0,
+          bankSavings: 0,
+          investments: 0,
           cash: '',
           assets: '',
           spendingLevel: '',
@@ -199,8 +219,12 @@ export const useCharacterStore = create<WizardState>()(
       setBackstory: (backstory) => set((s) => ({ backstory: { ...s.backstory, ...backstory } })),
       setEquipment: (equipment) => set({ equipment }),
       setCustomItems: (items) => set({ customItems: items }),
-      setWealth: (data) =>
-        set({ cash: data.cash, assets: data.assets, spendingLevel: data.spendingLevel }),
+      setLifestyle: (data) =>
+        set({
+          housingId: data.housingId, clothingId: data.clothingId,
+          cashOnHand: data.cashOnHand, bankSavings: data.bankSavings, investments: data.investments,
+          cash: data.cash, assets: data.assets, spendingLevel: data.spendingLevel,
+        }),
 
       abandonCharacter: () =>
         set((s) => ({
@@ -236,6 +260,11 @@ export const useCharacterStore = create<WizardState>()(
           backstory: {},
           equipment: [],
           customItems: [],
+          housingId: '',
+          clothingId: '',
+          cashOnHand: 0,
+          bankSavings: 0,
+          investments: 0,
           cash: '',
           assets: '',
           spendingLevel: '',

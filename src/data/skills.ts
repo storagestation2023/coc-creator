@@ -118,7 +118,20 @@ export const SKILLS: Skill[] = [
     name: 'Język Obcy',
     base: 1,
     category: 'academic',
-    specializations: [],
+    specializations: [
+      'Angielski',
+      'Arabski',
+      'Chiński',
+      'Francuski',
+      'Grecki',
+      'Hebrajski',
+      'Hiszpański',
+      'Japoński',
+      'Łacina',
+      'Niemiecki',
+      'Rosyjski',
+      'Włoski',
+    ],
   },
   {
     id: 'jezyk_ojczysty',
@@ -231,6 +244,7 @@ export const SKILLS: Skill[] = [
       'Kryminalistyka',
       'Kryptografia',
       'Matematyka',
+      'Medycyna Sądowa',
       'Meteorologia',
       'Zoologia',
     ],
@@ -346,7 +360,7 @@ export const SKILLS: Skill[] = [
     name: 'Sztuka Przetrwania',
     base: 10,
     category: 'practical',
-    specializations: ['Arktyka', 'Morze', 'Pustynia', 'Las'],
+    specializations: ['Arktyka', 'Góry', 'Las', 'Morze', 'Pustynia'],
   },
   {
     id: 'sztuka_rzemioslo',
@@ -355,13 +369,26 @@ export const SKILLS: Skill[] = [
     category: 'practical',
     specializations: [
       'Aktorstwo',
-      'Fotografia',
+      'Balwierstwo',
+      'Dziennikarstwo',
       'Fałszerstwo',
-      'Kucharstwo',
+      'Fotografia',
+      'Gotowanie',
+      'Gra na Instrumencie',
+      'Hydraulika',
+      'Komedia',
+      'Krawiectwo',
+      'Literatura',
       'Malarstwo',
+      'Maszynopisanie',
+      'Rolnictwo i Hodowla',
+      'Rysunek Techniczny',
       'Rzeźbiarstwo',
-      'Ślusarstwo',
+      'Spawanie',
+      'Stenografia',
       'Stolarstwo',
+      'Ślusarstwo',
+      'Śpiew',
     ],
   },
   {
@@ -452,8 +479,33 @@ export const SKILLS: Skill[] = [
   },
 ]
 
+/** Extract base skill ID from a composite key. 'nauka:Fizyka' → 'nauka', 'bijatyka' → 'bijatyka' */
+export function getBaseSkillId(key: string): string {
+  if (key.startsWith('choice:') || key === 'any' || key === 'any_academic') return key
+  const colonIdx = key.indexOf(':')
+  return colonIdx > 0 ? key.substring(0, colonIdx) : key
+}
+
+/** Extract specialization from composite key. 'nauka:Fizyka' → 'Fizyka', 'nauka' → null */
+export function getSpecialization(key: string): string | null {
+  if (key.startsWith('choice:') || key === 'any' || key === 'any_academic') return null
+  const colonIdx = key.indexOf(':')
+  return colonIdx > 0 ? key.substring(colonIdx + 1) : null
+}
+
+/** Format a composite skill key for display. 'nauka:Fizyka' → 'Nauka (Fizyka)' */
+export function getSkillDisplayName(key: string): string {
+  const baseId = getBaseSkillId(key)
+  const skill = SKILLS.find((s) => s.id === baseId)
+  const baseName = skill?.name ?? baseId
+  const spec = getSpecialization(key)
+  return spec ? `${baseName} (${spec})` : baseName
+}
+
+/** Look up a skill by ID, supporting composite keys like 'nauka:Fizyka' → looks up 'nauka'. */
 export function getSkillById(id: string): Skill | undefined {
-  return SKILLS.find((skill) => skill.id === id)
+  const baseId = getBaseSkillId(id)
+  return SKILLS.find((skill) => skill.id === baseId)
 }
 
 export function getSkillsForEra(era: Era): Skill[] {

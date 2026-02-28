@@ -5,7 +5,8 @@ import { useCharacterStore } from '@/stores/characterStore'
 import { useCharacterSubmit } from '@/hooks/useCharacterSubmit'
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
 import { OCCUPATIONS } from '@/data/occupations'
-import { getSkillById } from '@/data/skills'
+import { getSkillById, getSkillDisplayName } from '@/data/skills'
+import { getWealthBracket } from '@/data/eras'
 import { ERA_LABELS, METHOD_LABELS, type CharacteristicKey } from '@/types/common'
 import type { Characteristics } from '@/types/character'
 import { halfValue, fifthValue } from '@/lib/utils'
@@ -102,18 +103,13 @@ export function StepReview() {
         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm max-h-[250px] overflow-y-auto">
           {Object.entries(allSkillPoints)
             .filter(([, pts]) => pts > 0)
-            .sort(([a], [b]) => {
-              const sA = getSkillById(a)
-              const sB = getSkillById(b)
-              return (sA?.name ?? a).localeCompare(sB?.name ?? b, 'pl')
-            })
+            .sort(([a], [b]) => getSkillDisplayName(a).localeCompare(getSkillDisplayName(b), 'pl'))
             .map(([skillId, pts]) => {
-              const skill = getSkillById(skillId)
               const base = getBase(skillId)
               const total = base + pts
               return (
                 <div key={skillId} className="flex justify-between py-0.5">
-                  <span className="text-coc-text-muted truncate">{skill?.name ?? skillId}</span>
+                  <span className="text-coc-text-muted truncate">{getSkillDisplayName(skillId)}</span>
                   <span className="font-mono font-bold ml-2">{total}%</span>
                 </div>
               )
@@ -144,13 +140,30 @@ export function StepReview() {
         })}
       </Section>
 
-      {/* Equipment */}
-      <Section title="Ekwipunek">
-        <div className="flex flex-wrap gap-2 mb-2">
-          <Badge>Gotówka: {store.cash}</Badge>
-          <Badge>Majątek: {store.assets}</Badge>
-          <Badge>Poziom życia: {store.spendingLevel}</Badge>
-        </div>
+      {/* Lifestyle & Equipment */}
+      <Section title="Majątek i ekwipunek">
+        {(() => {
+          const era = store.era
+          const creditRating = (store.occupationSkillPoints['majetnosc'] ?? 0) +
+            (typeof getSkillById('majetnosc')?.base === 'number' ? (getSkillById('majetnosc')?.base as number) : 0)
+          const bracket = era ? getWealthBracket(era, creditRating) : null
+          const housing = bracket?.housingOptions.find((h) => h.id === store.housingId)
+          const clothing = bracket?.clothingOptions.find((c) => c.id === store.clothingId)
+          return (
+            <>
+              <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                <Field label="Mieszkanie" value={housing?.label ?? '—'} />
+                <Field label="Ubranie" value={clothing?.label ?? '—'} />
+              </div>
+              <div className="flex flex-wrap gap-2 mb-2">
+                <Badge>Gotówka: {store.cash}</Badge>
+                {store.bankSavings > 0 && <Badge>Bank: {store.bankSavings}</Badge>}
+                {store.investments > 0 && <Badge>Inwestycje: {store.investments}</Badge>}
+                <Badge>Poziom życia: {store.spendingLevel}</Badge>
+              </div>
+            </>
+          )
+        })()}
         <ul className="text-sm space-y-0.5">
           {[...store.equipment, ...store.customItems].map((item, i) => (
             <li key={i} className="text-coc-text-muted">• {item}</li>
