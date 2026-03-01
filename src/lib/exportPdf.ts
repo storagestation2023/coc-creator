@@ -141,9 +141,15 @@ function buildPage(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: Export
   if (transport) lv('Transport:', transport, col2, y, TAB)
   y -= 12
   if (char.appearance) {
-    lv('Wygląd:', char.appearance, col1, y, TAB)
+    page.drawText('Wygląd:', { x: col1, y, size: 7, font, color: MID })
+    const appMaxW = CW - TAB
+    const appLines = wrapText(char.appearance, fontBold, 8, appMaxW)
+    for (const line of appLines) {
+      page.drawText(line, { x: col1 + TAB, y, size: 8, font: fontBold, color: DARK })
+      y -= 12
+    }
   }
-  y -= 14
+  y -= 2
 
   // ── Characteristics (single row of 8) ──
   y = sectionHeader(page, 'CECHY', M, y, CW, fontBold)
