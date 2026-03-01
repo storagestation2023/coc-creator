@@ -56,33 +56,39 @@ function resolveBase(skillKey: string, chars: Record<string, number>): number {
 // ============================================================
 
 // --- Personal info (left-aligned text) ---
+// Calibrated: v11 name at y=797 rendered at "1920" header → needs ~18pt down
 const P1_INFO = {
-  name:       { x: 135, y: 797 },
-  occupation: { x: 92,  y: 764 },
-  age:        { x: 80,  y: 747 },
-  sex:        { x: 132, y: 747 },
+  name:       { x: 150, y: 779 },
+  occupation: { x: 105, y: 746 },
+  age:        { x: 82,  y: 729 },
+  sex:        { x: 145, y: 729 },
 } as const
 
 // --- Characteristics grid ---
-// 3 columns × 3 rows. Each cell: large value box + stacked 1/2 (top) + 1/5 (bottom)
-// Row Y centers estimated from annotated image proportions
-// Half/fifth offset ±8pt from row center
+// Calibrated from screenshot pixel measurements:
+//   X scale: 0.415 pts/px (page left=px55, right=px1530 → 612pts)
+//   Y scale: 0.200 pts/px (from STR/CON row positions)
+//   S box center: img x≈625 → PDF x≈237
+//   ZR box center: img x≈845 → PDF x≈328
+//   MOC box center: img x≈1095 → PDF x≈432
+//   Half/fifth boxes ~32pt right of value box
+//   Row centers: y≈767, 739, 711; half/fifth offset ±8
 const P1_CHARS: Record<CharacteristicKey, {
   value: [number, number]; half: [number, number]; fifth: [number, number]
 }> = {
-  // Row 1: S(STR), ZR(DEX), MOC(POW)  — y≈774
-  STR: { value: [278, 774], half: [310, 782], fifth: [310, 766] },
-  DEX: { value: [372, 774], half: [404, 782], fifth: [404, 766] },
-  POW: { value: [468, 774], half: [500, 782], fifth: [500, 766] },
-  // Row 2: KON(CON), WYG(APP), WYK(EDU)  — y≈746
-  CON: { value: [278, 746], half: [310, 754], fifth: [310, 738] },
-  APP: { value: [372, 746], half: [404, 754], fifth: [404, 738] },
-  EDU: { value: [468, 746], half: [500, 754], fifth: [500, 738] },
-  // Row 3: BC(SIZ), INT  — y≈718
-  SIZ: { value: [278, 718], half: [310, 726], fifth: [310, 710] },
-  INT: { value: [372, 718], half: [404, 726], fifth: [404, 710] },
+  // Row 1: S(STR), ZR(DEX), MOC(POW)  — y≈767
+  STR: { value: [237, 767], half: [269, 775], fifth: [269, 759] },
+  DEX: { value: [328, 767], half: [360, 775], fifth: [360, 759] },
+  POW: { value: [432, 767], half: [464, 775], fifth: [464, 759] },
+  // Row 2: KON(CON), WYG(APP), WYK(EDU)  — y≈739
+  CON: { value: [237, 739], half: [269, 747], fifth: [269, 731] },
+  APP: { value: [328, 739], half: [360, 747], fifth: [360, 731] },
+  EDU: { value: [432, 739], half: [464, 747], fifth: [464, 731] },
+  // Row 3: BC(SIZ), INT  — y≈711
+  SIZ: { value: [237, 711], half: [269, 719], fifth: [269, 703] },
+  INT: { value: [328, 711], half: [360, 719], fifth: [360, 703] },
 }
-const P1_MOVE: [number, number] = [510, 718]
+const P1_MOVE: [number, number] = [506, 711]
 
 // ============================================================
 //  Drawing helpers
