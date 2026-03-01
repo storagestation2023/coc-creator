@@ -46,9 +46,13 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
   const words = text.split(/\s+/)
   const lines: string[] = []
   let current = ''
+  // Estimate max chars as safety fallback (avgCharWidth ≈ size * 0.5)
+  const maxChars = Math.floor(maxWidth / (size * 0.5))
   for (const word of words) {
     const test = current ? `${current} ${word}` : word
-    if (font.widthOfTextAtSize(test, size) > maxWidth && current) {
+    const tooWide = font.widthOfTextAtSize(test, size) > maxWidth
+    const tooLong = test.length > maxChars
+    if ((tooWide || tooLong) && current) {
       lines.push(current)
       current = word
     } else {
