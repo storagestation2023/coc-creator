@@ -50,6 +50,83 @@ function resolveBase(skillKey: string, chars: Record<string, number>): number {
   return base
 }
 
+// ============================================================
+//  Coordinate maps — estimated from annotated template image
+//  Page size: 612.283 × 858.898 pts, origin bottom-left
+// ============================================================
+
+// --- Personal info (left-aligned text) ---
+const P1_INFO = {
+  name:       { x: 135, y: 797 },
+  occupation: { x: 92,  y: 764 },
+  age:        { x: 80,  y: 747 },
+  sex:        { x: 132, y: 747 },
+} as const
+
+// --- Characteristics grid ---
+// 3 columns × 3 rows. Each cell: large value box + stacked 1/2 (top) + 1/5 (bottom)
+// Row Y centers estimated from annotated image proportions
+// Half/fifth offset ±8pt from row center
+const P1_CHARS: Record<CharacteristicKey, {
+  value: [number, number]; half: [number, number]; fifth: [number, number]
+}> = {
+  // Row 1: S(STR), ZR(DEX), MOC(POW)  — y≈774
+  STR: { value: [278, 774], half: [310, 782], fifth: [310, 766] },
+  DEX: { value: [372, 774], half: [404, 782], fifth: [404, 766] },
+  POW: { value: [468, 774], half: [500, 782], fifth: [500, 766] },
+  // Row 2: KON(CON), WYG(APP), WYK(EDU)  — y≈746
+  CON: { value: [278, 746], half: [310, 754], fifth: [310, 738] },
+  APP: { value: [372, 746], half: [404, 754], fifth: [404, 738] },
+  EDU: { value: [468, 746], half: [500, 754], fifth: [500, 738] },
+  // Row 3: BC(SIZ), INT  — y≈718
+  SIZ: { value: [278, 718], half: [310, 726], fifth: [310, 710] },
+  INT: { value: [372, 718], half: [404, 726], fifth: [404, 710] },
+}
+const P1_MOVE: [number, number] = [510, 718]
+
+// ============================================================
+//  Drawing helpers
+// ============================================================
+
+function drawLeft(page: PDFPage, text: string, x: number, y: number, font: PDFFont, size: number) {
+  page.drawText(sanitize(text), { x, y: y - size / 3, size, font })
+}
+
+function drawCentered(page: PDFPage, text: string, cx: number, cy: number, font: PDFFont, size: number) {
+  const s = sanitize(text)
+  const w = font.widthOfTextAtSize(s, size)
+  page.drawText(s, { x: cx - w / 2, y: cy - size / 3, size, font })
+}
+
+// ============================================================
+//  Template fill functions
+// ============================================================
+
+function fillPersonalInfo(page: PDFPage, font: PDFFont, char: ExportCharacter) {
+  const occupation = OCCUPATIONS.find((o) => o.id === char.occupation_id)
+  const sz = 9
+  drawLeft(page, char.name, P1_INFO.name.x, P1_INFO.name.y, font, sz)
+  drawLeft(page, occupation?.name ?? char.occupation_id, P1_INFO.occupation.x, P1_INFO.occupation.y, font, sz)
+  drawLeft(page, String(char.age), P1_INFO.age.x, P1_INFO.age.y, font, sz)
+  const sexLabel = char.gender === 'M' ? 'M' : char.gender === 'F' ? 'K' : char.gender
+  drawLeft(page, sexLabel, P1_INFO.sex.x, P1_INFO.sex.y, font, sz)
+}
+
+function fillCharacteristics(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: ExportCharacter, derived: Derived) {
+  for (const key of CHAR_KEYS) {
+    const val = char.characteristics[key] ?? 0
+    const pos = P1_CHARS[key]
+    drawCentered(page, String(val), pos.value[0], pos.value[1], fontBold, 10)
+    drawCentered(page, String(halfValue(val)), pos.half[0], pos.half[1], font, 7)
+    drawCentered(page, String(fifthValue(val)), pos.fifth[0], pos.fifth[1], font, 7)
+  }
+  drawCentered(page, String(derived.move_rate), P1_MOVE[0], P1_MOVE[1], fontBold, 10)
+}
+
+// ============================================================
+//  Fallback: simple text-based PDF
+// ============================================================
+
 function generateTextPdf(pdfDoc: PDFDocument, char: ExportCharacter, font: PDFFont) {
   const occupation = OCCUPATIONS.find((o) => o.id === char.occupation_id)
   const derived = char.derived as Derived
@@ -104,7 +181,6 @@ function generateTextPdf(pdfDoc: PDFDocument, char: ExportCharacter, font: PDFFo
   }
   if (col === 1) y -= 13
 
-  // Backstory
   const bsLabels: Record<string, string> = {
     ideology: 'Ideologia / Przekonania', significant_people_who: 'Wazne osoby - Kto',
     significant_people_why: 'Wazne osoby - Dlaczego', meaningful_locations: 'Znaczace miejsca',
@@ -122,7 +198,6 @@ function generateTextPdf(pdfDoc: PDFDocument, char: ExportCharacter, font: PDFFo
     }
   }
 
-  // Equipment
   if (char.equipment.length > 0) {
     y -= 10; ensureSpace(80); text('EKWIPUNEK', 50, y, 12); y -= 18
     if (char.cash) { text(`Gotowka: ${char.cash}  Majatek: ${char.assets}`, 50, y); y -= 14 }
@@ -136,8 +211,33 @@ function generateTextPdf(pdfDoc: PDFDocument, char: ExportCharacter, font: PDFFo
 // ============================================================
 
 export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create()
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-  generateTextPdf(pdfDoc, char, font)
+  const derived = char.derived as Derived
+
+  let pdfDoc: PDFDocument
+  let usedTemplate = false
+
+  try {
+    const basePath = import.meta.env.BASE_URL ?? '/'
+    const resp = await fetch(`${basePath}coc-sheet-template.pdf`)
+    if (!resp.ok) throw new Error('Template not found')
+    const bytes = await resp.arrayBuffer()
+    pdfDoc = await PDFDocument.load(bytes)
+    usedTemplate = true
+  } catch {
+    pdfDoc = await PDFDocument.create()
+  }
+
+  if (usedTemplate) {
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+    const p1 = pdfDoc.getPages()[0]
+
+    fillPersonalInfo(p1, font, char)
+    fillCharacteristics(p1, font, fontBold, char, derived)
+  } else {
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+    generateTextPdf(pdfDoc, char, font)
+  }
+
   return pdfDoc.save()
 }
