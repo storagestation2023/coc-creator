@@ -363,8 +363,8 @@ export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8
   pdfDoc.registerFontkit(fontkit as Parameters<typeof pdfDoc.registerFontkit>[0])
 
   const [regularBytes, boldBytes] = await Promise.all([
-    fetch(import.meta.env.BASE_URL + 'fonts/Inter-Regular.otf').then(r => r.arrayBuffer()),
-    fetch(import.meta.env.BASE_URL + 'fonts/Inter-Bold.otf').then(r => r.arrayBuffer()),
+    fetch(import.meta.env.BASE_URL + 'fonts/Inter-Regular.ttf').then(r => r.arrayBuffer()),
+    fetch(import.meta.env.BASE_URL + 'fonts/Inter-Bold.ttf').then(r => r.arrayBuffer()),
   ])
 
   const font = await pdfDoc.embedFont(regularBytes, { subset: true })
