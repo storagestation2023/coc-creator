@@ -5,7 +5,7 @@ const TEST_CHARACTER = {
   name: 'Ernest Simmons',
   age: 25,
   gender: 'M',
-  appearance: 'Wysoki, szczuply mezczyzna o ciemnych wlosach',
+  appearance: 'Wysoki, szczupły mężczyzna o ciemnych włosach',
   characteristics: {
     STR: 60, CON: 65, SIZ: 45, DEX: 50,
     APP: 30, INT: 40, POW: 60, EDU: 67,
@@ -36,24 +36,24 @@ const TEST_CHARACTER = {
     'nauka:biologia': 30,
   },
   backstory: {
-    ideology: 'Wolnosc ponad wszystko',
-    significant_people_who: 'Stary Bill, inny wloczega',
-    significant_people_why: 'Uratowal mi zycie',
-    meaningful_locations: 'Opuszczona stodoła na obrzezach miasta',
+    ideology: 'Wolność ponad wszystko',
+    significant_people_who: 'Stary Bill, inny włóczęga',
+    significant_people_why: 'Uratował mi życie',
+    meaningful_locations: 'Opuszczona stodoła na obrzeżach miasta',
     treasured_possessions: 'Stary medalion po matce',
-    traits: 'Nieufny wobec obcych, ale lojalny wobec przyjaciol',
-    appearance_description: 'Brudny, poddarty plaszcz, twarz poorana zmarszczkami',
-    key_connection: 'Bill - jedyna osoba, ktorej ufa',
+    traits: 'Nieufny wobec obcych, ale lojalny wobec przyjaciół',
+    appearance_description: 'Brudny, podarty płaszcz, twarz poorana zmarszczkami',
+    key_connection: 'Bill - jedyna osoba, której ufa',
   },
   equipment: [
     '[Mieszkanie] Bezdomny',
     '[Transport] Pieszo',
-    '[Styl zycia] Nedzarz',
-    'Noz',
+    '[Styl życia] Nędzarz',
+    'Nóż',
     'Sznur (10m)',
     'Latarka',
     'Zapałki',
-    'Manierce',
+    'Manierka',
     'Koc',
   ],
   cash: '0.5 $',
@@ -74,7 +74,7 @@ export function TestPdfPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'test-export-v14.pdf'
+      a.download = 'test-export-v15.pdf'
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {

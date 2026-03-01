@@ -1,4 +1,5 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
+import { PDFDocument, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
+import fontkit from '@pdf-lib/fontkit'
 import { OCCUPATIONS } from '@/data/occupations'
 import { getSkillDisplayName, getSkillBase } from '@/data/skills'
 import { WEAPONS } from '@/data/weapons'
@@ -6,7 +7,7 @@ import type { CharacteristicKey } from '@/types/common'
 import { halfValue, fifthValue } from '@/lib/utils'
 
 const CHAR_LABELS: Record<CharacteristicKey, string> = {
-  STR: 'S', CON: 'KON', SIZ: 'BC', DEX: 'ZR', APP: 'WYG', INT: 'INT', POW: 'MOC', EDU: 'WYK',
+  STR: 'SIŁ', CON: 'KON', SIZ: 'BC', DEX: 'ZR', APP: 'WYG', INT: 'INT', POW: 'MOC', EDU: 'WYK',
 }
 
 interface ExportCharacter {
@@ -34,16 +35,6 @@ type Derived = {
   db: string; build: number; move_rate: number; dodge: number
 }
 
-function sanitize(text: string): string {
-  const map: Record<string, string> = {
-    'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
-    'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
-    'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N',
-    'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z',
-  }
-  return text.replace(/[^\x00-\x7F]/g, (c) => map[c] ?? c)
-}
-
 function resolveBase(skillKey: string, chars: Record<string, number>): number {
   const base = getSkillBase(skillKey)
   if (base === 'half_dex') return Math.floor((chars['DEX'] ?? 0) / 2)
@@ -52,7 +43,7 @@ function resolveBase(skillKey: string, chars: Record<string, number>): number {
 }
 
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
-  const words = sanitize(text).split(/\s+/)
+  const words = text.split(/\s+/)
   const lines: string[] = []
   let current = ''
   for (const word of words) {
@@ -68,114 +59,128 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
   return lines
 }
 
+function extractFromEquipment(equipment: string[], prefix: string): string | null {
+  const item = equipment.find(e => e.startsWith(prefix))
+  return item ? item.replace(prefix, '').trim() : null
+}
+
 // ============================================================
 //  Layout constants
 // ============================================================
 const W = 595
 const H = 842
-const M = 36        // page margin
-const CW = W - 2 * M // content width = 523
+const M = 28
+const CW = W - 2 * M
 
 const DARK = rgb(0.15, 0.15, 0.15)
 const MID = rgb(0.4, 0.4, 0.4)
-const LIGHT = rgb(0.85, 0.85, 0.85)
+const LIGHT = rgb(0.82, 0.82, 0.82)
 const ACCENT = rgb(0.2, 0.35, 0.2)
+const ROW_BG = rgb(0.95, 0.95, 0.95)
 
 // ============================================================
 //  Drawing primitives
 // ============================================================
 
 function sectionHeader(page: PDFPage, title: string, x: number, y: number, w: number, font: PDFFont): number {
-  page.drawRectangle({ x, y: y - 14, width: w, height: 14, color: ACCENT })
-  page.drawText(sanitize(title), { x: x + 4, y: y - 11, size: 9, font, color: rgb(1, 1, 1) })
-  return y - 14
-}
-
-function labelValue(page: PDFPage, label: string, value: string, x: number, y: number, font: PDFFont, fontBold: PDFFont, labelW = 60) {
-  page.drawText(sanitize(label), { x, y, size: 8, font, color: MID })
-  page.drawText(sanitize(value), { x: x + labelW, y, size: 9, font: fontBold, color: DARK })
+  page.drawRectangle({ x, y: y - 12, width: w, height: 12, color: ACCENT })
+  page.drawText(title, { x: x + 4, y: y - 9.5, size: 7.5, font, color: rgb(1, 1, 1) })
+  return y - 12
 }
 
 function drawBox(page: PDFPage, x: number, y: number, w: number, h: number) {
   page.drawRectangle({ x, y, width: w, height: h, borderColor: LIGHT, borderWidth: 0.5, color: rgb(0.97, 0.97, 0.97) })
 }
 
-function textInBox(page: PDFPage, text: string, x: number, y: number, w: number, h: number, font: PDFFont, size: number, bold = false) {
+function textInBox(page: PDFPage, text: string, x: number, y: number, w: number, h: number, font: PDFFont, size: number) {
   drawBox(page, x, y, w, h)
-  const s = sanitize(text)
-  const tw = font.widthOfTextAtSize(s, size)
-  page.drawText(s, { x: x + (w - tw) / 2, y: y + (h - size) / 2, size, font, color: bold ? DARK : MID })
+  const tw = font.widthOfTextAtSize(text, size)
+  page.drawText(text, { x: x + (w - tw) / 2, y: y + (h - size) / 2, size, font, color: DARK })
 }
 
 // ============================================================
-//  Page builders
+//  Single-page builder
 // ============================================================
 
-function buildPage1(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: ExportCharacter, derived: Derived) {
+function buildPage(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: ExportCharacter, derived: Derived) {
   let y = H - M
 
+  const lv = (label: string, value: string, x: number, yy: number, lw: number) => {
+    page.drawText(label, { x, y: yy, size: 7, font, color: MID })
+    page.drawText(value, { x: x + lw, y: yy, size: 8, font: fontBold, color: DARK })
+  }
+
   // ── Title bar ──
-  page.drawRectangle({ x: M, y: y - 22, width: CW, height: 22, color: DARK })
-  page.drawText('KARTA BADACZA  -  Zew Cthulhu 7ed', { x: M + 6, y: y - 17, size: 11, font: fontBold, color: rgb(1, 1, 1) })
-  const eraLabel = char.era === 'classic_1920s' ? '1920s' : char.era === 'modern' ? 'Wspolczesnosc' : char.era
-  page.drawText(sanitize(eraLabel), { x: M + CW - 60, y: y - 17, size: 9, font, color: rgb(0.7, 0.7, 0.7) })
-  y -= 30
+  page.drawRectangle({ x: M, y: y - 18, width: CW, height: 18, color: DARK })
+  page.drawText('KARTA BADACZA  ·  Zew Cthulhu 7ed', { x: M + 5, y: y - 13.5, size: 9, font: fontBold, color: rgb(1, 1, 1) })
+  const eraLabel = char.era === 'classic_1920s' ? '1920s' : char.era === 'modern' ? 'Współczesność' : char.era
+  page.drawText(eraLabel, { x: M + CW - 70, y: y - 13.5, size: 8, font, color: rgb(0.7, 0.7, 0.7) })
+  y -= 18
+
+  // ── Extra spacing (user requested +1 line break) ──
+  y -= 14
 
   // ── Personal info ──
-  const occupation = OCCUPATIONS.find((o) => o.id === char.occupation_id)
-  const sexLabel = char.gender === 'M' ? 'Mezczyzna' : char.gender === 'F' ? 'Kobieta' : char.gender
+  const occupation = OCCUPATIONS.find(o => o.id === char.occupation_id)
+  const sexLabel = char.gender === 'M' ? 'Mężczyzna' : char.gender === 'F' ? 'Kobieta' : char.gender
+  const housing = extractFromEquipment(char.equipment, '[Mieszkanie]')
+  const transport = extractFromEquipment(char.equipment, '[Transport]')
+  const lifestyle = extractFromEquipment(char.equipment, '[Styl życia]') ?? extractFromEquipment(char.equipment, '[Styl zycia]')
 
-  labelValue(page, 'Imie:', char.name, M, y, font, fontBold, 32)
-  labelValue(page, 'Wiek:', String(char.age), M + 280, y, font, fontBold, 30)
-  labelValue(page, 'Plec:', sanitize(sexLabel), M + 370, y, font, fontBold, 28)
-  y -= 14
-  labelValue(page, 'Zawod:', occupation?.name ?? char.occupation_id, M, y, font, fontBold, 38)
-  y -= 20
-
-  // ── Characteristics ──
-  y = sectionHeader(page, 'CECHY', M, y, CW, fontBold)
-  y -= 4
-
-  // Header row
-  const charColW = 62
-  const charX0 = M + 2
-  const labels = ['', 'Wartosc', '1/2', '1/5']
-  for (let i = 0; i < labels.length; i++) {
-    page.drawText(labels[i], { x: charX0 + i * charColW + (i === 0 ? 0 : 16), y: y - 9, size: 6, font, color: MID })
-  }
+  // Row 1: name, age, gender
+  lv('Imię:', char.name, M, y, 28)
+  lv('Wiek:', String(char.age), M + 200, y, 26)
+  lv('Płeć:', sexLabel, M + 270, y, 24)
   y -= 12
 
-  // Characteristic rows (2 columns of 4)
-  const charRowH = 16
-  const drawCharRow = (key: CharacteristicKey, cx: number, cy: number) => {
-    const val = char.characteristics[key] ?? 0
-    page.drawText(CHAR_LABELS[key], { x: cx, y: cy - 11, size: 9, font: fontBold, color: DARK })
-    textInBox(page, String(val), cx + 30, cy - 14, 30, charRowH, fontBold, 10, true)
-    textInBox(page, String(halfValue(val)), cx + 64, cy - 14, 26, charRowH, font, 8)
-    textInBox(page, String(fifthValue(val)), cx + 94, cy - 14, 26, charRowH, font, 8)
+  // Row 2: occupation, era
+  lv('Zawód:', occupation?.name ?? char.occupation_id, M, y, 34)
+  if (housing) lv('Mieszkanie:', housing, M + 280, y, 58)
+  y -= 12
+
+  // Row 3: appearance, transport
+  if (char.appearance) {
+    lv('Wygląd:', char.appearance, M, y, 40)
   }
+  if (transport) lv('Transport:', transport, M + 350, y, 50)
+  y -= 14
 
-  const leftKeys: CharacteristicKey[] = ['STR', 'CON', 'SIZ', 'DEX']
-  const rightKeys: CharacteristicKey[] = ['APP', 'INT', 'POW', 'EDU']
-
-  for (let i = 0; i < 4; i++) {
-    drawCharRow(leftKeys[i], M + 2, y)
-    drawCharRow(rightKeys[i], M + 140, y)
-
-    // Derived stats in third column
-    if (i === 0) { labelValue(page, 'PW:', String(derived.hp), M + 290, y - 10, font, fontBold, 22); labelValue(page, 'PP:', String(derived.san), M + 350, y - 10, font, fontBold, 22) }
-    if (i === 1) { labelValue(page, 'PM:', String(derived.mp), M + 290, y - 10, font, fontBold, 22); labelValue(page, 'Szczescie:', String(char.luck), M + 350, y - 10, font, fontBold, 55) }
-    if (i === 2) { labelValue(page, 'PO:', String(derived.db), M + 290, y - 10, font, fontBold, 22); labelValue(page, 'Krzepa:', String(derived.build), M + 350, y - 10, font, fontBold, 42) }
-    if (i === 3) { labelValue(page, 'Ruch:', String(derived.move_rate), M + 290, y - 10, font, fontBold, 32); labelValue(page, 'Unik:', String(derived.dodge), M + 350, y - 10, font, fontBold, 32) }
-
-    y -= charRowH + 2
-  }
-
-  y -= 6
-
-  // ── Skills ──
-  y = sectionHeader(page, 'UMIEJETNOSCI', M, y, CW, fontBold)
+  // ── Characteristics (single row of 8) ──
+  y = sectionHeader(page, 'CECHY', M, y, CW, fontBold)
   y -= 2
+
+  const charKeys: CharacteristicKey[] = ['STR', 'CON', 'SIZ', 'DEX', 'APP', 'INT', 'POW', 'EDU']
+  const charBlockW = CW / 8
+  for (let i = 0; i < 8; i++) {
+    const key = charKeys[i]
+    const val = char.characteristics[key] ?? 0
+    const cx = M + i * charBlockW
+
+    page.drawText(CHAR_LABELS[key], { x: cx + 2, y: y - 9, size: 6.5, font: fontBold, color: MID })
+    textInBox(page, String(val), cx + 2, y - 24, 22, 13, fontBold, 9)
+    textInBox(page, String(halfValue(val)), cx + 26, y - 24, 18, 13, font, 7)
+    textInBox(page, String(fifthValue(val)), cx + 46, y - 24, 18, 13, font, 7)
+  }
+  y -= 26
+
+  // ── Derived stats row ──
+  y -= 3
+  const dItems = [
+    ['PW', String(derived.hp)], ['PP', String(derived.san)], ['PM', String(derived.mp)],
+    ['Szczęście', String(char.luck)], ['MO', derived.db], ['Krzepa', String(derived.build)],
+    ['Ruch', String(derived.move_rate)], ['Unik', String(derived.dodge)],
+  ]
+  const dColW = CW / dItems.length
+  for (let i = 0; i < dItems.length; i++) {
+    const dx = M + i * dColW
+    page.drawText(dItems[i][0], { x: dx + 1, y: y - 8, size: 6, font, color: MID })
+    page.drawText(dItems[i][1], { x: dx + 1, y: y - 18, size: 8, font: fontBold, color: DARK })
+  }
+  y -= 22
+
+  // ── Skills (3-column) ──
+  y = sectionHeader(page, 'UMIEJĘTNOŚCI', M, y, CW, fontBold)
+  y -= 1
 
   const allPts: Record<string, number> = { ...char.occupation_skill_points }
   for (const [id, pts] of Object.entries(char.personal_skill_points)) {
@@ -191,47 +196,36 @@ function buildPage1(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: Expor
     }))
     .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
 
-  // Skill header
-  const skillColW = CW / 2
-  for (let c = 0; c < 2; c++) {
-    const sx = M + c * skillColW
-    page.drawText('Umiejetnosc', { x: sx + 2, y: y - 8, size: 6, font, color: MID })
-    page.drawText('%', { x: sx + skillColW - 52, y: y - 8, size: 6, font, color: MID })
-    page.drawText('1/2', { x: sx + skillColW - 36, y: y - 8, size: 6, font, color: MID })
-    page.drawText('1/5', { x: sx + skillColW - 18, y: y - 8, size: 6, font, color: MID })
-  }
-  y -= 10
+  const numCols = 3
+  const skillColW = CW / numCols
+  const skillRowH = 10
+  const rowsPerCol = Math.ceil(skillEntries.length / numCols)
 
-  const skillRowH = 12
-  const midIdx = Math.ceil(skillEntries.length / 2)
-
-  for (let i = 0; i < midIdx; i++) {
-    if (y - skillRowH < M + 10) break // safety
-
-    for (let c = 0; c < 2; c++) {
-      const idx = c === 0 ? i : i + midIdx
+  for (let row = 0; row < rowsPerCol; row++) {
+    if (y - skillRowH < M) break
+    for (let col = 0; col < numCols; col++) {
+      const idx = col * rowsPerCol + row
       if (idx >= skillEntries.length) continue
       const s = skillEntries[idx]
-      const sx = M + c * skillColW
+      const sx = M + col * skillColW
 
-      if (i % 2 === 0) {
-        page.drawRectangle({ x: sx, y: y - skillRowH, width: skillColW - 4, height: skillRowH, color: rgb(0.95, 0.95, 0.95) })
+      if (row % 2 === 0) {
+        page.drawRectangle({ x: sx, y: y - skillRowH, width: skillColW - 2, height: skillRowH, color: ROW_BG })
       }
 
-      page.drawText(sanitize(s.name), { x: sx + 2, y: y - skillRowH + 3, size: 7, font, color: DARK })
-      page.drawText(String(s.total), { x: sx + skillColW - 54, y: y - skillRowH + 3, size: 7, font: fontBold, color: DARK })
-      page.drawText(String(s.half), { x: sx + skillColW - 36, y: y - skillRowH + 3, size: 7, font, color: MID })
-      page.drawText(String(s.fifth), { x: sx + skillColW - 18, y: y - skillRowH + 3, size: 7, font, color: MID })
+      page.drawText(s.name, { x: sx + 2, y: y - skillRowH + 2.5, size: 6.5, font, color: DARK })
+      page.drawText(String(s.total), { x: sx + skillColW - 42, y: y - skillRowH + 2.5, size: 6.5, font: fontBold, color: DARK })
+      page.drawText(String(s.half), { x: sx + skillColW - 28, y: y - skillRowH + 2.5, size: 6, font, color: MID })
+      page.drawText(String(s.fifth), { x: sx + skillColW - 14, y: y - skillRowH + 2.5, size: 6, font, color: MID })
     }
     y -= skillRowH
   }
-
-  y -= 8
+  y -= 4
 
   // ── Weapons ──
   const weaponItems: { name: string; skill: number; damage: string; range: string }[] = []
   for (const item of char.equipment) {
-    const matched = WEAPONS.find((w) => item.startsWith(w.name))
+    const matched = WEAPONS.find(w => item.startsWith(w.name))
     if (matched) {
       const invested = (char.occupation_skill_points[matched.skill_id] ?? 0) + (char.personal_skill_points[matched.skill_id] ?? 0)
       const base = resolveBase(matched.skill_id, char.characteristics)
@@ -239,120 +233,121 @@ function buildPage1(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: Expor
     }
   }
 
-  if (weaponItems.length > 0 && y > M + 60) {
+  if (weaponItems.length > 0) {
     y = sectionHeader(page, 'UZBROJENIE', M, y, CW, fontBold)
-    y -= 2
-    page.drawText('Bron', { x: M + 2, y: y - 8, size: 6, font, color: MID })
-    page.drawText('Zwykly', { x: M + 170, y: y - 8, size: 6, font, color: MID })
-    page.drawText('Trudny', { x: M + 210, y: y - 8, size: 6, font, color: MID })
-    page.drawText('Ekstr.', { x: M + 250, y: y - 8, size: 6, font, color: MID })
-    page.drawText('Obrazenia', { x: M + 290, y: y - 8, size: 6, font, color: MID })
-    page.drawText('Zasieg', { x: M + 370, y: y - 8, size: 6, font, color: MID })
+    y -= 1
+    page.drawText('Broń', { x: M + 2, y: y - 8, size: 6, font, color: MID })
+    page.drawText('Zw.', { x: M + 150, y: y - 8, size: 6, font, color: MID })
+    page.drawText('Tr.', { x: M + 180, y: y - 8, size: 6, font, color: MID })
+    page.drawText('Ek.', { x: M + 210, y: y - 8, size: 6, font, color: MID })
+    page.drawText('Obrażenia', { x: M + 250, y: y - 8, size: 6, font, color: MID })
+    page.drawText('Zasięg', { x: M + 350, y: y - 8, size: 6, font, color: MID })
     y -= 10
 
     for (const w of weaponItems) {
-      if (y - 12 < M) break
-      page.drawText(sanitize(w.name), { x: M + 2, y: y - 10, size: 7, font, color: DARK })
-      page.drawText(String(w.skill), { x: M + 175, y: y - 10, size: 7, font: fontBold, color: DARK })
-      page.drawText(String(halfValue(w.skill)), { x: M + 215, y: y - 10, size: 7, font, color: MID })
-      page.drawText(String(fifthValue(w.skill)), { x: M + 255, y: y - 10, size: 7, font, color: MID })
-      page.drawText(sanitize(w.damage), { x: M + 290, y: y - 10, size: 7, font, color: DARK })
-      page.drawText(sanitize(w.range), { x: M + 370, y: y - 10, size: 7, font, color: DARK })
-      y -= 12
+      if (y - 10 < M) break
+      page.drawText(w.name, { x: M + 2, y: y - 8, size: 6.5, font, color: DARK })
+      page.drawText(String(w.skill), { x: M + 152, y: y - 8, size: 6.5, font: fontBold, color: DARK })
+      page.drawText(String(halfValue(w.skill)), { x: M + 182, y: y - 8, size: 6.5, font, color: MID })
+      page.drawText(String(fifthValue(w.skill)), { x: M + 212, y: y - 8, size: 6.5, font, color: MID })
+      page.drawText(w.damage, { x: M + 250, y: y - 8, size: 6.5, font, color: DARK })
+      page.drawText(w.range, { x: M + 350, y: y - 8, size: 6.5, font, color: DARK })
+      y -= 10
     }
+    y -= 2
   }
 
-  // ── Combat stats footer ──
-  if (y > M + 20) {
-    y -= 4
-    page.drawLine({ start: { x: M, y }, end: { x: M + CW, y }, thickness: 0.5, color: LIGHT })
-    y -= 12
-    page.drawText(sanitize(`Modyfikator Obrazen: ${derived.db}    Krzepa: ${derived.build}    Ruch: ${derived.move_rate}    Unik: ${derived.dodge} (1/2: ${halfValue(derived.dodge)}, 1/5: ${fifthValue(derived.dodge)})`),
-      { x: M, y, size: 8, font, color: DARK })
-  }
-
-  return y
-}
-
-function buildPage2(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: ExportCharacter) {
-  let y = H - M
-
-  // ── Backstory ──
+  // ── Backstory (inline label: value) ──
   y = sectionHeader(page, 'HISTORIA POSTACI', M, y, CW, fontBold)
-  y -= 6
+  y -= 2
 
-  const bsSections: { label: string; key: string }[] = [
-    { label: 'Ideologia / Przekonania', key: 'ideology' },
-    { label: 'Wazne osoby', key: 'significant_people_who' },
-    { label: 'Dlaczego sa wazne', key: 'significant_people_why' },
-    { label: 'Znaczace miejsca', key: 'meaningful_locations' },
+  const bsSections = [
+    { label: 'Ideologia/Przekonania', key: 'ideology' },
+    { label: 'Ważne osoby', key: 'significant_people_who' },
+    { label: 'Dlaczego są ważne', key: 'significant_people_why' },
+    { label: 'Znaczące miejsca', key: 'meaningful_locations' },
     { label: 'Cenny przedmiot', key: 'treasured_possessions' },
     { label: 'Cechy charakteru', key: 'traits' },
-    { label: 'Opis wygladu', key: 'appearance_description' },
-    { label: 'Kluczowa wiez', key: 'key_connection' },
+    { label: 'Wygląd', key: 'appearance_description' },
+    { label: 'Kluczowa więź', key: 'key_connection' },
   ]
 
   for (const section of bsSections) {
     const value = char.backstory[section.key]
     if (!value) continue
-    if (y < M + 40) break
+    if (y < M + 10) break
 
-    page.drawText(sanitize(section.label + ':'), { x: M, y: y - 9, size: 8, font: fontBold, color: ACCENT })
-    y -= 12
+    const labelText = section.label + ': '
+    const labelW = fontBold.widthOfTextAtSize(labelText, 7)
+    page.drawText(labelText, { x: M + 2, y: y - 9, size: 7, font: fontBold, color: ACCENT })
 
-    const lines = wrapText(value, font, 8, CW - 10)
-    for (const line of lines) {
-      if (y < M + 10) break
-      page.drawText(line, { x: M + 6, y: y - 8, size: 8, font, color: DARK })
-      y -= 11
+    // First line starts after label
+    const firstLineMaxW = CW - 6 - labelW
+    const words = value.split(/\s+/)
+    let firstLine = ''
+    let wordIdx = 0
+    for (; wordIdx < words.length; wordIdx++) {
+      const test = firstLine ? `${firstLine} ${words[wordIdx]}` : words[wordIdx]
+      if (font.widthOfTextAtSize(test, 7) > firstLineMaxW && firstLine) break
+      firstLine = test
     }
-    y -= 4
+    page.drawText(firstLine, { x: M + 2 + labelW, y: y - 9, size: 7, font, color: DARK })
+    y -= 10
+
+    // Overflow lines
+    const remaining = words.slice(wordIdx).join(' ')
+    if (remaining) {
+      const lines = wrapText(remaining, font, 7, CW - 10)
+      for (const line of lines) {
+        if (y < M + 10) break
+        page.drawText(line, { x: M + 6, y: y - 9, size: 7, font, color: DARK })
+        y -= 10
+      }
+    }
   }
+  y -= 4
 
-  y -= 6
-
-  // ── Equipment ──
+  // ── Equipment + Wealth side by side ──
   const nonWeapons = char.equipment.filter(
-    (item) =>
-      !WEAPONS.some((w) => item.startsWith(w.name)) &&
+    item => !WEAPONS.some(w => item.startsWith(w.name)) &&
       !item.startsWith('[Mieszkanie]') &&
       !item.startsWith('[Transport]') &&
       !item.startsWith('[Styl')
   )
 
-  if (nonWeapons.length > 0 && y > M + 60) {
-    y = sectionHeader(page, 'EKWIPUNEK', M, y, CW, fontBold)
-    y -= 4
+  const halfW = CW / 2 - 4
 
-    const eqColW = CW / 2
-    const midEq = Math.ceil(nonWeapons.length / 2)
-    for (let i = 0; i < midEq; i++) {
-      if (y - 11 < M) break
-      for (let c = 0; c < 2; c++) {
-        const idx = c === 0 ? i : i + midEq
-        if (idx >= nonWeapons.length) continue
-        const ex = M + c * eqColW
-        page.drawText(sanitize(`- ${nonWeapons[idx]}`), { x: ex + 2, y: y - 9, size: 7, font, color: DARK })
-      }
-      y -= 11
+  if (nonWeapons.length > 0 || char.cash || char.assets) {
+    const headerY = y
+    y = sectionHeader(page, 'EKWIPUNEK', M, headerY, halfW, fontBold)
+    sectionHeader(page, 'MAJĄTEK', M + halfW + 8, headerY, halfW, fontBold)
+    y -= 2
+
+    // Equipment (left)
+    const eqStartY = y
+    for (let i = 0; i < nonWeapons.length; i++) {
+      if (y - 9 < M) break
+      page.drawText(`· ${nonWeapons[i]}`, { x: M + 3, y: y - 8, size: 6.5, font, color: DARK })
+      y -= 9
     }
-    y -= 4
-  }
 
-  // ── Wealth ──
-  if (y > M + 40) {
-    y = sectionHeader(page, 'MAJATEK', M, y, CW / 2, fontBold)
-    y -= 4
+    // Wealth (right)
+    let wy = eqStartY
+    const rx = M + halfW + 10
+    if (lifestyle) {
+      page.drawText(`Styl życia: ${lifestyle}`, { x: rx, y: wy - 8, size: 7, font, color: DARK })
+      wy -= 10
+    }
     if (char.spending_level) {
-      page.drawText(sanitize(`Poziom zycia: ${char.spending_level}`), { x: M + 4, y: y - 9, size: 8, font, color: DARK })
-      y -= 12
+      page.drawText(`Poziom wydatków: ${char.spending_level}`, { x: rx, y: wy - 8, size: 7, font, color: DARK })
+      wy -= 10
     }
     if (char.cash) {
-      page.drawText(sanitize(`Gotowka: ${char.cash}`), { x: M + 4, y: y - 9, size: 8, font, color: DARK })
-      y -= 12
+      page.drawText(`Gotówka: ${char.cash}`, { x: rx, y: wy - 8, size: 7, font, color: DARK })
+      wy -= 10
     }
     if (char.assets) {
-      page.drawText(sanitize(`Dobytek: ${char.assets}`), { x: M + 4, y: y - 9, size: 8, font, color: DARK })
+      page.drawText(`Dobytek: ${char.assets}`, { x: rx, y: wy - 8, size: 7, font, color: DARK })
     }
   }
 }
@@ -364,14 +359,19 @@ function buildPage2(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: Expor
 export async function exportCharacterAsPdf(char: ExportCharacter): Promise<Uint8Array> {
   const derived = char.derived as Derived
   const pdfDoc = await PDFDocument.create()
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
 
-  const p1 = pdfDoc.addPage([W, H])
-  buildPage1(p1, font, fontBold, char, derived)
+  pdfDoc.registerFontkit(fontkit as Parameters<typeof pdfDoc.registerFontkit>[0])
 
-  const p2 = pdfDoc.addPage([W, H])
-  buildPage2(p2, font, fontBold, char)
+  const [regularBytes, boldBytes] = await Promise.all([
+    fetch(import.meta.env.BASE_URL + 'fonts/Inter-Regular.otf').then(r => r.arrayBuffer()),
+    fetch(import.meta.env.BASE_URL + 'fonts/Inter-Bold.otf').then(r => r.arrayBuffer()),
+  ])
+
+  const font = await pdfDoc.embedFont(regularBytes, { subset: true })
+  const fontBold = await pdfDoc.embedFont(boldBytes, { subset: true })
+
+  const page = pdfDoc.addPage([W, H])
+  buildPage(page, font, fontBold, char, derived)
 
   return pdfDoc.save()
 }
