@@ -120,29 +120,29 @@ function buildPage(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: Export
   // ── Extra spacing (user requested +1 line break) ──
   y -= 14
 
-  // ── Personal info ──
+  // ── Personal info (2-column grid, uniform tab) ──
   const occupation = OCCUPATIONS.find(o => o.id === char.occupation_id)
   const sexLabel = char.gender === 'M' ? 'Mężczyzna' : char.gender === 'F' ? 'Kobieta' : char.gender
   const housing = extractFromEquipment(char.equipment, '[Mieszkanie]')
   const transport = extractFromEquipment(char.equipment, '[Transport]')
   const lifestyle = extractFromEquipment(char.equipment, '[Styl życia]') ?? extractFromEquipment(char.equipment, '[Styl zycia]')
 
-  // Row 1: name, age, gender
-  lv('Imię:', char.name, M, y, 28)
-  lv('Wiek:', String(char.age), M + 200, y, 26)
-  lv('Płeć:', sexLabel, M + 270, y, 24)
-  y -= 12
+  const col1 = M
+  const col2 = M + CW / 2
+  const TAB = 62 // uniform label→value offset
 
-  // Row 2: occupation, era
-  lv('Zawód:', occupation?.name ?? char.occupation_id, M, y, 34)
-  if (housing) lv('Mieszkanie:', housing, M + 280, y, 58)
+  lv('Imię:', char.name, col1, y, TAB)
+  lv('Wiek:', String(char.age), col2, y, TAB)
   y -= 12
-
-  // Row 3: appearance, transport
+  lv('Zawód:', occupation?.name ?? char.occupation_id, col1, y, TAB)
+  lv('Płeć:', sexLabel, col2, y, TAB)
+  y -= 12
+  if (housing) lv('Mieszkanie:', housing, col1, y, TAB)
+  if (transport) lv('Transport:', transport, col2, y, TAB)
+  y -= 12
   if (char.appearance) {
-    lv('Wygląd:', char.appearance, M, y, 40)
+    lv('Wygląd:', char.appearance, col1, y, TAB)
   }
-  if (transport) lv('Transport:', transport, M + 350, y, 50)
   y -= 14
 
   // ── Characteristics (single row of 8) ──
