@@ -1,10 +1,12 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/layouts/AppLayout'
 import { CreatePage } from '@/pages/CreatePage'
 import { AdminPage } from '@/pages/AdminPage'
 import { SuccessPage } from '@/pages/SuccessPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
-import { TestPdfPage } from '@/pages/TestPdfPage'
+
+const TestPdfPage = lazy(() => import('@/pages/TestPdfPage').then(m => ({ default: m.TestPdfPage })))
 
 function App() {
   return (
@@ -14,7 +16,7 @@ function App() {
         <Route path="/create" element={<CreatePage />} />
         <Route path="/success" element={<SuccessPage />} />
         <Route path="/admin" element={<AdminPage />} />
-        <Route path="/test-pdf" element={<TestPdfPage />} />
+        <Route path="/test-pdf" element={<Suspense fallback={<div style={{ padding: 40, textAlign: 'center' }}>Ładowanie...</div>}><TestPdfPage /></Suspense>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

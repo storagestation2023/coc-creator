@@ -16,6 +16,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'pdf-lib': ['pdf-lib'],
+          'fontkit': ['@pdf-lib/fontkit'],
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'supabase': ['@supabase/supabase-js'],
         },
