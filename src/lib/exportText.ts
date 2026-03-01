@@ -24,6 +24,8 @@ interface ExportCharacter {
   spending_level: string
   era: string
   method: string
+  player_name?: string
+  invite_code?: string
 }
 
 export function exportCharacterAsText(char: ExportCharacter): string {
@@ -37,6 +39,8 @@ export function exportCharacterAsText(char: ExportCharacter): string {
   lines.push('')
 
   // Basic info
+  if (char.player_name) lines.push(`Gracz: ${char.player_name}`)
+  if (char.invite_code) lines.push(`Kod zaproszenia: ${char.invite_code}`)
   lines.push(`Imię i nazwisko: ${char.name}`)
   lines.push(`Wiek: ${char.age}    Płeć: ${char.gender}`)
   lines.push(`Zawód: ${occupation?.name ?? char.occupation_id}`)

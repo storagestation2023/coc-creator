@@ -44,6 +44,9 @@ export interface CharacterData {
   spending_level: string
   era: Era
   method: CreationMethod
+  player_name?: string
+  invite_code?: string
+  admin_notes?: string
   created_at?: string
   updated_at?: string
 }

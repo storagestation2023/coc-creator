@@ -10,6 +10,7 @@ type Gender = 'M' | 'F'
 export function StepBasicInfo() {
   const store = useCharacterStore()
 
+  const [playerName, setPlayerName] = useState(store.playerName || '')
   const [gender, setGender] = useState<Gender | null>((store.gender as Gender) || null)
   const [name, setName] = useState(store.name || '')
   const [appearance, setAppearance] = useState(store.appearance || '')
@@ -19,17 +20,29 @@ export function StepBasicInfo() {
     setName(randomName(gender))
   }
 
-  const canContinue = name.trim().length > 0 && gender !== null
+  const canContinue = playerName.trim().length > 0 && name.trim().length > 0 && gender !== null
 
   const handleNext = () => {
     if (!canContinue) return
-    store.setBasicInfo({ name: name.trim(), gender: gender!, appearance: appearance.trim() })
+    store.setBasicInfo({ playerName: playerName.trim(), name: name.trim(), gender: gender!, appearance: appearance.trim() })
     store.nextStep()
   }
 
   return (
     <Card title="Dane podstawowe">
       <div className="space-y-4">
+        {/* Player name */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-coc-text-muted">Imię gracza (Twoje prawdziwe imię)</label>
+          <input
+            type="text"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            placeholder="np. Jan Kowalski"
+            className="w-full px-3 py-2 bg-coc-surface-light border border-coc-border rounded-lg text-coc-text placeholder:text-coc-text-muted/50 focus:outline-none focus:border-coc-accent-light transition-colors"
+          />
+        </div>
+
         {/* Gender toggle */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-coc-text-muted">Płeć</label>

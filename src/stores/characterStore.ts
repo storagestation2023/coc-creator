@@ -21,6 +21,7 @@ export interface WizardState {
   maxSkillValue: number
 
   // Step 2: Basic info
+  playerName: string
   name: string
   age: number | null
   gender: string
@@ -78,7 +79,7 @@ export interface WizardState {
   setInviteCode: (data: { id: string; code: string; methods: CreationMethod[]; method: CreationMethod | null; era: Era; perks: string[]; maxTries: number; timesUsed: number; maxSkillValue: number }) => void
   setMethod: (method: CreationMethod) => void
   setAge: (age: number) => void
-  setBasicInfo: (data: { name: string; gender: string; appearance: string }) => void
+  setBasicInfo: (data: { playerName: string; name: string; gender: string; appearance: string }) => void
   setCharacteristics: (chars: Partial<Characteristics>) => void
   setLuck: (luck: number) => void
   setAgeDeductions: (deductions: Partial<Record<CharacteristicKey, number>>) => void
@@ -106,6 +107,7 @@ export interface WizardState {
 }
 
 const characterDataDefaults = {
+  playerName: '',
   name: '',
   age: null,
   gender: '',
@@ -187,6 +189,7 @@ export const useCharacterStore = create<WizardState>()(
 
       setBasicInfo: (data) =>
         set({
+          playerName: data.playerName,
           name: data.name,
           gender: data.gender,
           appearance: data.appearance,
@@ -237,7 +240,7 @@ export const useCharacterStore = create<WizardState>()(
     }),
     {
       name: 'coc-character-wizard',
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
         // Version 0/1 → 2: combat skills restructured (composite keys),
         // wealth system reworked, clothingId removed.
@@ -258,6 +261,11 @@ export const useCharacterStore = create<WizardState>()(
             currentStep: 1,
             savedStep: 0,
           }
+        }
+        // Version 2 → 3: added playerName field
+        if (version < 3) {
+          const old = persisted as Record<string, unknown>
+          return { ...old, playerName: (old.playerName as string) ?? '' }
         }
         return persisted as WizardState
       },

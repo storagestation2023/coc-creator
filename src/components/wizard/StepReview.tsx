@@ -52,6 +52,7 @@ export function StepReview() {
       {/* Basic Info */}
       <Section title="Dane podstawowe">
         <div className="grid grid-cols-2 gap-2 text-sm">
+          <Field label="Gracz" value={store.playerName} />
           <Field label="Imię" value={store.name} />
           <Field label="Wiek" value={String(store.age)} />
           <Field label="Płeć" value={store.gender} />

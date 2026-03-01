@@ -21,6 +21,8 @@ interface ExportCharacter {
   spending_level: string
   era: string
   method: string
+  player_name?: string
+  invite_code?: string
 }
 
 interface ExportButtonsProps {

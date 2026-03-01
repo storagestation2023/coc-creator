@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { KeyRound, Loader2, RotateCcw, PlayCircle } from 'lucide-react'
 import { useCharacterStore } from '@/stores/characterStore'
 import { useInviteCode } from '@/hooks/useInviteCode'
+import { supabase } from '@/lib/supabase'
 import { PERKS } from '@/data/perks'
 import { PL } from '@/data/i18n'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { ExportButtons } from '@/components/shared/ExportButtons'
 import { METHOD_LABELS, ERA_LABELS, type CreationMethod } from '@/types/common'
+import type { CharacterData } from '@/types/character'
 
 const STEP_NAMES = [
   PL.step_invite_code,
@@ -30,10 +33,23 @@ export function StepInviteCode() {
   const [code, setCode] = useState(store.inviteCode ?? '')
   const [selectedMethod, setSelectedMethod] = useState<CreationMethod | null>(store.method)
   const [resumeAvailable, setResumeAvailable] = useState(false)
+  const [submittedCharacter, setSubmittedCharacter] = useState<CharacterData | null>(null)
 
   const handleValidate = async () => {
+    setSubmittedCharacter(null)
     const result = await validate(code)
     if (result) {
+      // Check for existing submitted character
+      const { data: existingChar } = await supabase
+        .from('characters')
+        .select('*')
+        .eq('invite_code_id', result.id)
+        .eq('status', 'submitted')
+        .maybeSingle()
+      if (existingChar) {
+        setSubmittedCharacter(existingChar as CharacterData)
+      }
+
       const isSameCode = result.id === store.inviteCodeId
       const methods = result.methods ?? [result.method]
       const autoMethod = methods.length === 1 ? methods[0] : null
@@ -142,6 +158,25 @@ export function StepInviteCode() {
               </Badge>
             </div>
           </div>
+
+          {/* Submitted character — view & export */}
+          {submittedCharacter && (
+            <div className="bg-green-900/20 border border-green-700/40 rounded-lg p-4 space-y-3">
+              <p className="text-sm font-medium text-green-400">
+                Znaleziono zatwierdzoną postać
+              </p>
+              <div className="text-sm space-y-1">
+                <div><span className="text-coc-text-muted">Postać:</span> {submittedCharacter.name}</div>
+                {submittedCharacter.player_name && (
+                  <div><span className="text-coc-text-muted">Gracz:</span> {submittedCharacter.player_name}</div>
+                )}
+              </div>
+              <ExportButtons character={submittedCharacter as unknown as Parameters<typeof ExportButtons>[0]['character']} />
+              <p className="text-xs text-coc-text-muted">
+                Jeśli chcesz stworzyć nową postać, użyj opcji poniżej. Poprzednia postać zostanie zastąpiona.
+              </p>
+            </div>
+          )}
 
           {/* Resume existing character */}
           {resumeAvailable && (

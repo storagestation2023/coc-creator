@@ -1,4 +1,7 @@
-import { ArrowLeft } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowLeft, Save, Loader2 } from 'lucide-react'
+import { useAdminStore } from '@/stores/adminStore'
+import { adminUpdateCharacter } from '@/lib/admin'
 import { getSkillDisplayName, getSkillBase } from '@/data/skills'
 import { CHARACTERISTIC_MAP } from '@/data/characteristics'
 import { OCCUPATIONS } from '@/data/occupations'
@@ -32,13 +35,37 @@ interface CharacterViewerProps {
     era: string
     method: string
     status: string
+    player_name?: string
+    invite_code?: string
+    admin_notes?: string
   }
   onBack: () => void
+  onUpdate?: (updated: { id: string; admin_notes: string }) => void
 }
 
-export function CharacterViewer({ character: char, onBack }: CharacterViewerProps) {
+export function CharacterViewer({ character: char, onBack, onUpdate }: CharacterViewerProps) {
+  const { password } = useAdminStore()
+  const [notes, setNotes] = useState(char.admin_notes ?? '')
+  const [notesSaving, setNotesSaving] = useState(false)
+  const [notesSaved, setNotesSaved] = useState(false)
+
   const occupation = OCCUPATIONS.find((o) => o.id === char.occupation_id)
   const derived = char.derived as { hp: number; mp: number; san: number; db: string; build: number; move_rate: number; dodge: number }
+
+  const handleSaveNotes = async () => {
+    if (!password) return
+    setNotesSaving(true)
+    try {
+      await adminUpdateCharacter(password, char.id, { admin_notes: notes })
+      onUpdate?.({ id: char.id, admin_notes: notes })
+      setNotesSaved(true)
+      setTimeout(() => setNotesSaved(false), 2000)
+    } catch {
+      // error silently
+    } finally {
+      setNotesSaving(false)
+    }
+  }
 
   // Merge all skill points
   const allSkillPoints: Record<string, number> = { ...char.occupation_skill_points }
@@ -69,6 +96,8 @@ export function CharacterViewer({ character: char, onBack }: CharacterViewerProp
 
         {/* Basic info */}
         <div className="grid grid-cols-3 gap-2 text-sm mb-4">
+          {char.player_name && <div><span className="text-coc-text-muted">Gracz:</span> {char.player_name}</div>}
+          {char.invite_code && <div><span className="text-coc-text-muted">Kod:</span> <span className="font-mono">{char.invite_code}</span></div>}
           <div><span className="text-coc-text-muted">Wiek:</span> {char.age}</div>
           <div><span className="text-coc-text-muted">Płeć:</span> {char.gender}</div>
           <div><span className="text-coc-text-muted">Zawód:</span> {occupation?.name ?? char.occupation_id}</div>
@@ -174,6 +203,23 @@ export function CharacterViewer({ character: char, onBack }: CharacterViewerProp
             </ul>
           </>
         )}
+
+        {/* Admin notes */}
+        <h4 className="text-sm font-medium text-coc-text-muted uppercase tracking-wider mb-2">Notatki MG</h4>
+        <div className="mb-4">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notatki dla Strażnika Tajemnic..."
+            className="w-full px-3 py-2 bg-coc-surface-light border border-coc-border rounded-lg text-sm text-coc-text placeholder:text-coc-text-muted/50 focus:outline-none focus:border-coc-accent-light transition-colors min-h-[80px] resize-y"
+          />
+          <div className="flex items-center gap-2 mt-2">
+            <Button size="sm" onClick={handleSaveNotes} disabled={notesSaving}>
+              {notesSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              {notesSaved ? 'Zapisano!' : 'Zapisz notatki'}
+            </Button>
+          </div>
+        </div>
 
         {/* Export buttons */}
         <ExportButtons character={char} />

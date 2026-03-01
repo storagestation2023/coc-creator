@@ -34,6 +34,8 @@ interface CharacterRecord {
   era: string
   method: string
   status: string
+  player_name?: string
+  invite_code?: string
 }
 
 export function SuccessPage() {
@@ -116,6 +118,7 @@ function CharacterSummary({ character: char }: { character: CharacterRecord }) {
     <div className="space-y-4 border-t border-coc-border pt-4">
       {/* Basic Info */}
       <div className="grid grid-cols-3 gap-2 text-sm">
+        {char.player_name && <div><span className="text-coc-text-muted">Gracz:</span> {char.player_name}</div>}
         <div><span className="text-coc-text-muted">Imię:</span> {char.name}</div>
         <div><span className="text-coc-text-muted">Wiek:</span> {char.age}</div>
         <div><span className="text-coc-text-muted">Płeć:</span> {char.gender === 'M' ? 'Mężczyzna' : char.gender === 'F' ? 'Kobieta' : char.gender}</div>

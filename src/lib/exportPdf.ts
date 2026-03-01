@@ -28,6 +28,8 @@ interface ExportCharacter {
   spending_level: string
   era: string
   method: string
+  player_name?: string
+  invite_code?: string
 }
 
 type Derived = {
@@ -135,6 +137,9 @@ function buildPage(page: PDFPage, font: PDFFont, fontBold: PDFFont, char: Export
   const col2 = M + CW / 2
   const TAB = 62 // uniform label→value offset
 
+  if (char.player_name) lv('Gracz:', char.player_name, col1, y, TAB)
+  if (char.invite_code) lv('Kod:', char.invite_code, col2, y, TAB)
+  if (char.player_name || char.invite_code) y -= 12
   lv('Imię:', char.name, col1, y, TAB)
   lv('Wiek:', String(char.age), col2, y, TAB)
   y -= 12
